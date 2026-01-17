@@ -1,0 +1,67 @@
+name: poultry_accounting
+description: Desktop accounting system for poultry distribution business
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Database
+  drift: ^2.14.0
+  sqlite3_flutter_libs: ^0.5.0
+  path_provider: ^2.1.0
+  path: ^1.8.3
+  
+  # State Management
+  flutter_riverpod: ^2.4.0
+  riverpod_annotation: ^2.3.0
+  
+  # PDF Generation
+  pdf: ^3.10.0
+  printing: ^5.11.0
+  
+  # Security
+  crypto: ^3.0.3
+  encrypt: ^5.0.3
+  
+  # UI
+  intl: ^0.18.0
+  google_fonts: ^6.1.0
+  fl_chart: ^0.65.0
+  
+  # Utilities
+  uuid: ^4.2.0
+  logger: ^2.0.0
+  file_picker: ^6.1.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  
+  # Code Generation
+  drift_dev: ^2.14.0
+  riverpod_generator: ^2.3.0
+  build_runner: ^2.4.0
+  
+  # Linting
+  custom_lint: ^0.5.0
+  riverpod_lint: ^2.3.0
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+  
+  # Assets
+  # assets:
+  #   - assets/images/
+  #   - assets/fonts/
+
+  # Fonts
+  # fonts:
+  #   - family: Cairo
+  #     fonts:
+  #       - asset: assets/fonts/Cairo-Regular.ttf
