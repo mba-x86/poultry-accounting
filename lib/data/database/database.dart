@@ -12,6 +12,7 @@ part 'database.g.dart';
 // ============================================================================
 
 /// Users table
+@DataClassName('UserTable')
 class Users extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get username => text().withLength(min: 3, max: 50).unique()();
@@ -25,6 +26,7 @@ class Users extends Table {
 }
 
 /// Customers table
+@DataClassName('CustomerTable')
 class Customers extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 100)();
@@ -39,6 +41,7 @@ class Customers extends Table {
 }
 
 /// Suppliers table
+@DataClassName('SupplierTable')
 class Suppliers extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 100)();
@@ -52,6 +55,7 @@ class Suppliers extends Table {
 }
 
 /// Products table
+@DataClassName('ProductTable')
 class Products extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 100)();
@@ -66,6 +70,7 @@ class Products extends Table {
 }
 
 /// Inventory Batches table (for FIFO costing)
+@DataClassName('InventoryBatchTable')
 class InventoryBatches extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get productId => integer().references(Products, #id)();
@@ -80,6 +85,7 @@ class InventoryBatches extends Table {
 }
 
 /// Sales Invoices table
+@DataClassName('SalesInvoiceTable')
 class SalesInvoices extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get invoiceNumber => text().unique()(); // Auto-generated
@@ -101,6 +107,7 @@ class SalesInvoices extends Table {
 }
 
 /// Sales Invoice Items table
+@DataClassName('SalesInvoiceItemTable')
 class SalesInvoiceItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get invoiceId => integer().references(SalesInvoices, #id, onDelete: KeyAction.cascade)();
@@ -114,6 +121,7 @@ class SalesInvoiceItems extends Table {
 }
 
 /// Purchase Invoices table
+@DataClassName('PurchaseInvoiceTable')
 class PurchaseInvoices extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get invoiceNumber => text()();
@@ -136,6 +144,7 @@ class PurchaseInvoices extends Table {
 }
 
 /// Purchase Invoice Items table
+@DataClassName('PurchaseInvoiceItemTable')
 class PurchaseInvoiceItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get invoiceId => integer().references(PurchaseInvoices, #id, onDelete: KeyAction.cascade)();
@@ -147,6 +156,7 @@ class PurchaseInvoiceItems extends Table {
 }
 
 /// Payments table (Receipts and Payments)
+@DataClassName('PaymentTable')
 class Payments extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get paymentNumber => text().unique()(); // Auto-generated
@@ -165,6 +175,7 @@ class Payments extends Table {
 }
 
 /// Expense Categories table
+@DataClassName('ExpenseCategoryTable')
 class ExpenseCategories extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text().withLength(min: 1, max: 100).unique()();
@@ -174,6 +185,7 @@ class ExpenseCategories extends Table {
 }
 
 /// Expenses table
+@DataClassName('ExpenseTable')
 class Expenses extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get categoryId => integer().references(ExpenseCategories, #id)();
@@ -188,6 +200,7 @@ class Expenses extends Table {
 }
 
 /// Audit Logs table
+@DataClassName('AuditLogTable')
 class AuditLogs extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get userId => integer().references(Users, #id)();
@@ -200,6 +213,7 @@ class AuditLogs extends Table {
 }
 
 /// Backups table (track backup history)
+@DataClassName('BackupTable')
 class Backups extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get fileName => text()();
@@ -207,6 +221,81 @@ class Backups extends Table {
   IntColumn get fileSize => integer()(); // in bytes
   BoolColumn get isEncrypted => boolean().withDefault(const Constant(false))();
   TextColumn get notes => text().nullable()();
+  IntColumn get createdBy => integer().references(Users, #id)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Product prices history table (for daily pricing)
+@DataClassName('ProductPriceTable')
+class ProductPrices extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get productId => integer().references(Products, #id)();
+  RealColumn get price => real()();
+  DateTimeColumn get date => dateTime()();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Raw meat processing table (for intake and tare calculation)
+@DataClassName('RawMeatProcessingTable')
+class RawMeatProcessings extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get batchNumber => text().unique()();
+  RealColumn get grossWeight => real()();
+  RealColumn get basketWeight => real()();
+  IntColumn get basketCount => integer()();
+  RealColumn get netWeight => real()(); // grossWeight - (basketWeight * basketCount)
+  IntColumn get supplierId => integer().nullable().references(Suppliers, #id)();
+  DateTimeColumn get processingDate => dateTime()();
+  TextColumn get notes => text().nullable()();
+  IntColumn get createdBy => integer().references(Users, #id)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+}
+
+/// Processing outputs table (for yield calculation)
+@DataClassName('ProcessingOutputTable')
+class ProcessingOutputs extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get processingId => integer().references(RawMeatProcessings, #id, onDelete: KeyAction.cascade)();
+  IntColumn get productId => integer().references(Products, #id)();
+  RealColumn get quantity => real()();
+  RealColumn get yieldPercentage => real()(); // (quantity / netWeight) * 100
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Partners table
+@DataClassName('PartnerTable')
+class Partners extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text().withLength(min: 1, max: 100)();
+  RealColumn get sharePercentage => real().withDefault(const Constant(50.0))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Partner transactions table (drawings and distributions)
+@DataClassName('PartnerTransactionTable')
+class PartnerTransactions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get partnerId => integer().references(Partners, #id)();
+  RealColumn get amount => real()();
+  TextColumn get type => text()(); // 'drawing' or 'distribution'
+  DateTimeColumn get transactionDate => dateTime()();
+  TextColumn get notes => text().nullable()();
+  IntColumn get createdBy => integer().references(Users, #id)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Cash Transactions (Safe/Box)
+@DataClassName('CashTransactionTable')
+class CashTransactions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  RealColumn get amount => real()();
+  TextColumn get type => text()(); // 'in' or 'out'
+  TextColumn get description => text().withLength(max: 200)();
+  DateTimeColumn get transactionDate => dateTime()();
+  IntColumn get relatedPaymentId => integer().nullable().references(Payments, #id)();
+  IntColumn get relatedExpenseId => integer().nullable().references(Expenses, #id)();
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -230,6 +319,12 @@ class Backups extends Table {
   Expenses,
   AuditLogs,
   Backups,
+  ProductPrices,
+  RawMeatProcessings,
+  ProcessingOutputs,
+  Partners,
+  PartnerTransactions,
+  CashTransactions,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -283,6 +378,20 @@ class AppDatabase extends _$AppDatabase {
         ),
       );
     }
+
+    // Create default partners (50/50 split as requested)
+    await into(partners).insert(
+      PartnersCompanion.insert(
+        name: 'الشريك الأول',
+        sharePercentage: const Value(50.0),
+      ),
+    );
+    await into(partners).insert(
+      PartnersCompanion.insert(
+        name: 'الشريك الثاني',
+        sharePercentage: const Value(50.0),
+      ),
+    );
   }
 }
 

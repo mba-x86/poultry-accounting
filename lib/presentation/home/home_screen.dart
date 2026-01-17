@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:poultry_accounting/presentation/processing/raw_meat_processing_screen.dart';
+import 'package:poultry_accounting/presentation/pricing/daily_pricing_screen.dart';
+import 'package:poultry_accounting/presentation/partnership/partnership_screen.dart';
+import 'package:poultry_accounting/presentation/sales/sales_invoice_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -32,9 +36,21 @@ class HomeScreen extends StatelessWidget {
             _buildDrawerItem(Icons.dashboard, 'لوحة التحكم', () {}),
             _buildDrawerItem(Icons.people, 'العملاء', () {}),
             _buildDrawerItem(Icons.inventory, 'المخزون', () {}),
-            _buildDrawerItem(Icons.description, 'الفواتير', () {}),
+             _buildDrawerItem(Icons.description, 'الفواتير', () {
+               Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesInvoiceScreen()));
+             }),
             _buildDrawerItem(Icons.payments, 'المدفوعات', () {}),
             const Divider(),
+            _buildDrawerItem(Icons.calculate, 'تجهيز الخام (الوزن والنسب)', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const RawMeatProcessingScreen()));
+            }),
+            _buildDrawerItem(Icons.price_change, 'التسعيرة اليومية', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyPricingScreen()));
+            }),
+            _buildDrawerItem(Icons.handshake, 'أرباح الشركاء', () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const PartnershipScreen()));
+            }),
+             const Divider(),
             _buildDrawerItem(Icons.settings, 'الإعدادات', () {}),
           ],
         ),
