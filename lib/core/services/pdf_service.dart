@@ -6,6 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:poultry_accounting/domain/entities/customer.dart';
 import 'package:poultry_accounting/domain/entities/invoice.dart';
+import 'package:poultry_accounting/domain/repositories/report_repository.dart';
 import 'package:printing/printing.dart';
 
 /// A service to generate PDF documents for the application.
@@ -82,6 +83,123 @@ class PdfService {
             pw.Text('رقم الفاتورة: #${invoice.id}'),
             pw.Text('التاريخ: ${dateFormat.format(invoice.invoiceDate)}'),
           ],
+        ),
+      ],
+    );
+  }
+
+  Future<Uint8List> generateStatementPdf({
+    required Customer customer,
+    required List<CustomerStatementEntry> entries,
+    DateTime? fromDate,
+    DateTime? toDate,
+    String? companyName,
+    String? companyPhone,
+    String? companyAddress,
+  }) async {
+    final pdf = pw.Document();
+    final font = await PdfGoogleFonts.cairoRegular();
+    final fontBold = await PdfGoogleFonts.cairoBold();
+
+    final theme = pw.ThemeData.withFont(
+      base: font,
+      bold: fontBold,
+    );
+
+    final dateFormat = intl.DateFormat('yyyy/MM/dd');
+    final currencyFormat = intl.NumberFormat.currency(symbol: '₪', decimalDigits: 2);
+
+    pdf.addPage(
+      pw.MultiPage(
+        theme: theme,
+        pageFormat: PdfPageFormat.a4,
+        textDirection: pw.TextDirection.rtl,
+        build: (context) => [
+          _buildStatementHeader(companyName, companyPhone, companyAddress, customer, fromDate, toDate),
+          pw.SizedBox(height: 20),
+          _buildStatementTable(entries, currencyFormat, dateFormat),
+          pw.SizedBox(height: 20),
+          _buildStatementSummary(entries, currencyFormat),
+          pw.Divider(),
+          _buildFooter(),
+        ],
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  pw.Widget _buildStatementHeader(
+    String? name,
+    String? phone,
+    String? address,
+    Customer customer,
+    DateTime? from,
+    DateTime? to,
+  ) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                pw.Text(name ?? 'اسم المنشأة', style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold)),
+                if (phone != null) pw.Text('هاتف: $phone'),
+              ],
+            ),
+            pw.Text('كشف حساب عميل', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.green)),
+          ],
+        ),
+        pw.SizedBox(height: 10),
+        pw.Text('العميل: ${customer.name}', style: pw.TextStyle(fontSize: 16)),
+        if (from != null || to != null)
+          pw.Text(
+            'الفترة: ${from != null ? intl.DateFormat('yyyy/MM/dd').format(from) : '...'} - ${to != null ? intl.DateFormat('yyyy/MM/dd').format(to) : '...'}',
+          ),
+      ],
+    );
+  }
+
+  pw.Widget _buildStatementTable(List<CustomerStatementEntry> entries, intl.NumberFormat currency, intl.DateFormat dateFormat) {
+    return pw.TableHelper.fromTextArray(
+      headers: ['التاريخ', 'البيان', 'المرجع', 'مدين (له)', 'دائن (عليه)', 'الرصيد'],
+      data: entries.map((e) => [
+        dateFormat.format(e.date),
+        e.description,
+        e.reference,
+        e.debit > 0 ? currency.format(e.debit) : '-',
+        e.credit > 0 ? currency.format(e.credit) : '-',
+        currency.format(e.balance),
+      ]).toList(),
+      border: pw.TableBorder.all(color: PdfColors.grey300),
+      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.green),
+      cellAlignment: pw.Alignment.center,
+    );
+  }
+
+  pw.Widget _buildStatementSummary(List<CustomerStatementEntry> entries, intl.NumberFormat currency) {
+    final lastBalance = entries.isNotEmpty ? entries.last.balance : 0.0;
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.end,
+      children: [
+        pw.Container(
+          width: 250,
+          padding: const pw.EdgeInsets.all(10),
+          decoration: pw.BoxDecoration(
+            border: pw.Border.all(color: PdfColors.grey),
+            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(5)),
+          ),
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('الرصيد النهائي المستحق:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+              pw.Text(currency.format(lastBalance), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14, color: lastBalance > 0 ? PdfColors.red : PdfColors.green)),
+            ],
+          ),
         ),
       ],
     );

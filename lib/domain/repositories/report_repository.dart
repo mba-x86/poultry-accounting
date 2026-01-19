@@ -39,6 +39,42 @@ class ProfitLossReport {
   final double profitMargin;
 }
 
+/// Cash flow entry
+class CashFlowEntry {
+  const CashFlowEntry({
+    required this.date,
+    required this.description,
+    required this.type, // 'in' or 'out'
+    required this.amount,
+    required this.balance,
+  });
+
+  final DateTime date;
+  final String description;
+  final String type;
+  final double amount;
+  final double balance;
+}
+
+/// Customer statement entry
+class CustomerStatementEntry {
+  const CustomerStatementEntry({
+    required this.date,
+    required this.description,
+    required this.reference,
+    required this.debit, // Customer owes us (Sales)
+    required this.credit, // Customer paid us (Receipts)
+    required this.balance,
+  });
+
+  final DateTime date;
+  final String description;
+  final String reference;
+  final double debit;
+  final double credit;
+  final double balance;
+}
+
 /// Aging report entry
 class AgingReportEntry {
   const AgingReportEntry({
@@ -91,6 +127,19 @@ abstract class ReportRepository {
 
   /// Get product sales report
   Future<List<Map<String, dynamic>>> getProductSalesReport({
+    DateTime? fromDate,
+    DateTime? toDate,
+  });
+
+  /// Get cash flow report
+  Future<List<CashFlowEntry>> getCashFlowReport({
+    DateTime? fromDate,
+    DateTime? toDate,
+  });
+
+  /// Get customer account statement
+  Future<List<CustomerStatementEntry>> getCustomerStatement(
+    int customerId, {
     DateTime? fromDate,
     DateTime? toDate,
   });

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultry_accounting/core/providers/database_providers.dart';
+import 'package:poultry_accounting/domain/entities/customer.dart';
 import 'package:poultry_accounting/domain/repositories/report_repository.dart';
+import 'package:poultry_accounting/presentation/reports/customer_statement_screen.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
@@ -16,7 +18,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -37,16 +39,20 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
           unselectedLabelColor: Colors.white70,
           indicatorColor: Colors.white,
           tabs: const [
+            Tab(text: 'الأرباح والخسائر'),
             Tab(text: 'مبيعات الأصناف'),
             Tab(text: 'أعمار الذمم'),
+            Tab(text: 'حركة الصندوق'),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: const [
+          ProfitLossTab(),
           ProductSalesReportTab(),
           AgingReportTab(),
+          CashFlowTab(),
         ],
       ),
     );
@@ -142,6 +148,7 @@ class AgingReportTab extends ConsumerWidget {
                     DataColumn(label: Text('60-90 يوم'), numeric: true),
                     DataColumn(label: Text('>90 يوم'), numeric: true),
                     DataColumn(label: Text('الإجمالي'), numeric: true),
+                    DataColumn(label: Text('إجراء')),
                   ],
                   rows: data.map((entry) {
                     return DataRow(cells: [
@@ -156,6 +163,25 @@ class AgingReportTab extends ConsumerWidget {
                         entry.total.toStringAsFixed(2),
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),),
+                      DataCell(IconButton(
+                        icon: const Icon(Icons.receipt_long, color: Colors.blue),
+                        onPressed: () {
+                          // We need to pass a Customer object or just the ID.
+                          // But CustomerStatementScreen needs a Customer object currently.
+                          // We can fetch it or just pass the ID and name.
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => CustomerStatementScreen(
+                                customer: Customer(
+                                  id: entry.customerId,
+                                  name: entry.customerName,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      )),
                     ],);
                   }).toList(),
                 ),
@@ -170,11 +196,139 @@ class AgingReportTab extends ConsumerWidget {
   }
 }
 
+class ProfitLossTab extends ConsumerWidget {
+  const ProfitLossTab({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reportAsync = ref.watch(profitLossStreamProvider);
+
+    return reportAsync.when(
+      data: (data) => SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _buildMetricCard('إجمالي الإيرادات', data.revenue, Colors.green),
+            const SizedBox(height: 12),
+            _buildMetricCard('تكلفة البضاعة المباعة', data.cost, Colors.orange),
+            const SizedBox(height: 12),
+            _buildMetricCard('إجمالي المصاريف', data.expenses, Colors.red),
+            const Divider(height: 32),
+            _buildMetricCard(
+              'صافي الربح',
+              data.profit,
+              data.profit >= 0 ? Colors.blue : Colors.red,
+              isBold: true,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'هامش الربح: ${data.profitMargin.toStringAsFixed(1)}%',
+              style: TextStyle(
+                fontSize: 16,
+                color: data.profit >= 0 ? Colors.green : Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('خطأ: $err')),
+    );
+  }
+
+  Widget _buildMetricCard(String title, double value, Color color, {bool isBold = false}) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title, style: TextStyle(fontSize: 18, fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+            Text(
+              '${value.toStringAsFixed(2)} ₪',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class CashFlowTab extends ConsumerWidget {
+  const CashFlowTab({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reportAsync = ref.watch(cashFlowStreamProvider);
+
+    return reportAsync.when(
+      data: (data) {
+        if (data.isEmpty) {
+          return const Center(child: Text('لا توجد حركة في الصندوق'));
+        }
+        return ListView.separated(
+          itemCount: data.length,
+          separatorBuilder: (_, __) => const Divider(height: 1),
+          itemBuilder: (context, index) {
+            final entry = data[index];
+            final isOpening = entry.type == 'opening';
+            final isIn = entry.type == 'in' || entry.type == 'receipt';
+
+            return ListTile(
+              leading: Icon(
+                isOpening ? Icons.account_balance : (isIn ? Icons.arrow_downward : Icons.arrow_upward),
+                color: isOpening ? Colors.grey : (isIn ? Colors.green : Colors.red),
+              ),
+              title: Text(entry.description),
+              subtitle: Text('${entry.date.day}/${entry.date.month}/${entry.date.year}'),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (!isOpening)
+                    Text(
+                      '${isIn ? "+" : "-"}${entry.amount.toStringAsFixed(2)} ₪',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: isIn ? Colors.green : Colors.red,
+                      ),
+                    ),
+                  Text(
+                    'الرصيد: ${entry.balance.toStringAsFixed(2)} ₪',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (err, stack) => Center(child: Text('خطأ: $err')),
+    );
+  }
+}
+
 // Simple providers for reports (move to database_providers.dart later if needed)
+final profitLossStreamProvider = FutureProvider<ProfitLossReport>((ref) async {
+  return ref.read(reportRepositoryProvider).getProfitLossReport();
+});
+
 final productSalesStreamProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   return ref.read(reportRepositoryProvider).getProductSalesReport();
 });
 
 final agingReportStreamProvider = FutureProvider<List<AgingReportEntry>>((ref) async {
   return ref.read(reportRepositoryProvider).getAgingReport();
+});
+
+final cashFlowStreamProvider = FutureProvider<List<CashFlowEntry>>((ref) async {
+  return ref.read(reportRepositoryProvider).getCashFlowReport();
 });

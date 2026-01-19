@@ -4,6 +4,8 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultry_accounting/core/providers/database_providers.dart';
+import 'package:poultry_accounting/core/providers/auth_provider.dart';
+import 'package:poultry_accounting/core/utils/security_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -17,7 +19,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _companyNameController = TextEditingController();
   final _companyPhoneController = TextEditingController(); // useful for footer
   final _companyAddressController = TextEditingController();
+  final _timeoutController = TextEditingController();
+  
+  final _oldPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  
   bool _isLoading = false;
+  bool _showPasswordSection = false;
 
   @override
   void initState() {
@@ -30,6 +39,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _companyNameController.dispose();
     _companyPhoneController.dispose();
     _companyAddressController.dispose();
+    _timeoutController.dispose();
+    _oldPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
@@ -40,6 +53,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _companyNameController.text = prefs.getString('company_name') ?? '';
       _companyPhoneController.text = prefs.getString('company_phone') ?? '';
       _companyAddressController.text = prefs.getString('company_address') ?? '';
+      _timeoutController.text = (prefs.getInt('session_timeout_minutes') ?? 10).toString();
       _isLoading = false;
     });
   }
@@ -50,6 +64,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     await prefs.setString('company_name', _companyNameController.text);
     await prefs.setString('company_phone', _companyPhoneController.text);
     await prefs.setString('company_address', _companyAddressController.text);
+    await prefs.setInt('session_timeout_minutes', int.tryParse(_timeoutController.text) ?? 10);
     setState(() => _isLoading = false);
     
     if (mounted) {
@@ -180,6 +195,50 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  Future<void> _changePassword() async {
+    final user = ref.read(authProvider).user;
+    if (user == null) return;
+
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('كلمة المرور الجديدة غير متطابقة'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    if (_newPasswordController.text.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('كلمة المرور يجب أن تكون 6 أحرف على الأقل'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await ref.read(userRepositoryProvider).changePassword(user.id!, _newPasswordController.text);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تم تغيير كلمة المرور بنجاح'), backgroundColor: Colors.green),
+        );
+        _oldPasswordController.clear();
+        _newPasswordController.clear();
+        _confirmPasswordController.clear();
+        setState(() => _showPasswordSection = false);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('فشل تغيير كلمة المرور: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -225,6 +284,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
+                      TextField(
+                        controller: _timeoutController,
+                        decoration: const InputDecoration(
+                          labelText: 'فترة الخمول قبل تسجيل الخروج (بالدقائق)',
+                          hintText: 'مثلاً: 10',
+                          border: OutlineInputBorder(),
+                          suffixText: 'دقيقة',
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+                      const SizedBox(height: 16),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -233,6 +303,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           label: const Text('حفظ الإعدادات'),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+              _buildSectionHeader('الأمان'),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Icon(Icons.lock_outline, color: Colors.orange),
+                        title: const Text('تغيير كلمة المرور'),
+                        trailing: IconButton(
+                          icon: Icon(_showPasswordSection ? Icons.expand_less : Icons.expand_more),
+                          onPressed: () => setState(() => _showPasswordSection = !_showPasswordSection),
+                        ),
+                        onTap: () => setState(() => _showPasswordSection = !_showPasswordSection),
+                      ),
+                      if (_showPasswordSection) ...[
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: _newPasswordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'كلمة المرور الجديدة',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _confirmPasswordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'تأكيد كلمة المرور الجديدة',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _changePassword,
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                            child: const Text('تحديث كلمة المرور'),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

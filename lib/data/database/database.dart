@@ -5,6 +5,7 @@ import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:poultry_accounting/core/constants/app_constants.dart';
+import 'package:poultry_accounting/core/utils/security_utils.dart';
 
 part 'database.g.dart';
 
@@ -351,7 +352,7 @@ class AppDatabase extends _$AppDatabase {
   // Seed default data
   Future<void> _seedDefaultData() async {
     // Create default admin user
-    const hashedPassword = 'admin123'; // Will be properly hashed in production
+    final hashedPassword = SecurityUtils.hashPassword(AppConstants.defaultAdminPassword);
     
     await into(users).insert(
       UsersCompanion.insert(

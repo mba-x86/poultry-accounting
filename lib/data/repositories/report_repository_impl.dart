@@ -287,4 +287,150 @@ class ReportRepositoryImpl implements ReportRepository {
 
     return result;
   }
+
+  @override
+  Future<List<CashFlowEntry>> getCashFlowReport({DateTime? fromDate, DateTime? toDate}) async {
+    final query = database.select(database.cashTransactions)..orderBy([(t) => OrderingTerm(expression: t.transactionDate)]);
+    
+    // For cash flow, we usually need the starting balance before fromDate
+    double balance = 0;
+    if (fromDate != null) {
+      final openingBalanceQuery = database.selectOnly(database.cashTransactions)
+        ..addColumns([database.cashTransactions.amount.sum()])
+        ..where(database.cashTransactions.transactionDate.isSmallerThanValue(fromDate))
+        ..where(database.cashTransactions.type.equals('in'));
+      final totalIn = await openingBalanceQuery.map((row) => row.read(database.cashTransactions.amount.sum())).getSingle() ?? 0.0;
+
+      final openingBalanceOutQuery = database.selectOnly(database.cashTransactions)
+        ..addColumns([database.cashTransactions.amount.sum()])
+        ..where(database.cashTransactions.transactionDate.isSmallerThanValue(fromDate))
+        ..where(database.cashTransactions.type.equals('out'));
+      final totalOut = await openingBalanceOutQuery.map((row) => row.read(database.cashTransactions.amount.sum())).getSingle() ?? 0.0;
+      
+      balance = totalIn - totalOut;
+    }
+
+    if (fromDate != null) {
+      query.where((tbl) => tbl.transactionDate.isBiggerOrEqualValue(fromDate));
+    }
+    if (toDate != null) {
+      query.where((tbl) => tbl.transactionDate.isSmallerOrEqualValue(toDate));
+    }
+
+    final transactions = await query.get();
+    final List<CashFlowEntry> report = [];
+
+    // Add opening balance entry if fromDate is set
+    if (fromDate != null) {
+      report.add(CashFlowEntry(
+        date: fromDate,
+        description: 'رصيد سابق',
+        type: 'opening',
+        amount: 0,
+        balance: balance,
+      ));
+    }
+
+    for (final tx in transactions) {
+      if (tx.type == 'in' || tx.type == 'receipt') {
+        balance += tx.amount;
+      } else {
+        balance -= tx.amount;
+      }
+      report.add(CashFlowEntry(
+        date: tx.transactionDate,
+        description: tx.description,
+        type: tx.type,
+        amount: tx.amount,
+        balance: balance,
+      ));
+    }
+
+    return report;
+  }
+
+  @override
+  Future<List<CustomerStatementEntry>> getCustomerStatement(int customerId, {DateTime? fromDate, DateTime? toDate}) async {
+    final List<CustomerStatementEntry> entries = [];
+    double balance = 0;
+
+    // 1. Calculate opening balance if fromDate is provided
+    if (fromDate != null) {
+      final salesQuery = database.selectOnly(database.salesInvoices)
+        ..addColumns([database.salesInvoices.total.sum()])
+        ..where(database.salesInvoices.customerId.equals(customerId))
+        ..where(database.salesInvoices.status.equals(InvoiceStatus.confirmed.code))
+        ..where(database.salesInvoices.invoiceDate.isSmallerThanValue(fromDate));
+      final totalSales = await salesQuery.map((row) => row.read(database.salesInvoices.total.sum())).getSingle() ?? 0.0;
+
+      final receiptsQuery = database.selectOnly(database.payments)
+        ..addColumns([database.payments.amount.sum()])
+        ..where(database.payments.customerId.equals(customerId))
+        ..where(database.payments.type.equals('receipt'))
+        ..where(database.payments.paymentDate.isSmallerThanValue(fromDate));
+      final totalReceipts = await receiptsQuery.map((row) => row.read(database.payments.amount.sum())).getSingle() ?? 0.0;
+      
+      balance = totalSales - totalReceipts;
+      
+      entries.add(CustomerStatementEntry(
+        date: fromDate,
+        description: 'رصيد سابق',
+        reference: '-',
+        debit: 0,
+        credit: 0,
+        balance: balance,
+      ));
+    }
+
+    // 2. Fetch Sales Invoices
+    final salesQuery = database.select(database.salesInvoices)
+      ..where((tbl) => tbl.customerId.equals(customerId))
+      ..where((tbl) => tbl.status.equals(InvoiceStatus.confirmed.code));
+    if (fromDate != null) salesQuery.where((tbl) => tbl.invoiceDate.isBiggerOrEqualValue(fromDate));
+    if (toDate != null) salesQuery.where((tbl) => tbl.invoiceDate.isSmallerOrEqualValue(toDate));
+    final sales = await salesQuery.get();
+
+    // 3. Fetch Receipts
+    final receiptsQuery = database.select(database.payments)
+      ..where((tbl) => tbl.customerId.equals(customerId))
+      ..where((tbl) => tbl.type.equals('receipt'));
+    if (fromDate != null) receiptsQuery.where((tbl) => tbl.paymentDate.isBiggerOrEqualValue(fromDate));
+    if (toDate != null) receiptsQuery.where((tbl) => tbl.paymentDate.isSmallerOrEqualValue(toDate));
+    final receipts = await receiptsQuery.get();
+
+    // 4. Merge and sort
+    final List<dynamic> transactions = [...sales, ...receipts];
+    transactions.sort((a, b) {
+      final dateA = a is SalesInvoiceTable ? a.invoiceDate : (a as PaymentTable).paymentDate;
+      final dateB = b is SalesInvoiceTable ? b.invoiceDate : (b as PaymentTable).paymentDate;
+      return dateA.compareTo(dateB);
+    });
+
+    // 5. Build statement
+    for (final tx in transactions) {
+      if (tx is SalesInvoiceTable) {
+        balance += tx.total;
+        entries.add(CustomerStatementEntry(
+          date: tx.invoiceDate,
+          description: 'فاتورة مبيعات',
+          reference: tx.invoiceNumber,
+          debit: tx.total,
+          credit: 0,
+          balance: balance,
+        ));
+      } else if (tx is PaymentTable) {
+        balance -= tx.amount;
+        entries.add(CustomerStatementEntry(
+          date: tx.paymentDate,
+          description: 'سند قبض - ${tx.method}',
+          reference: tx.paymentNumber,
+          debit: 0,
+          credit: tx.amount,
+          balance: balance,
+        ));
+      }
+    }
+
+    return entries;
+  }
 }

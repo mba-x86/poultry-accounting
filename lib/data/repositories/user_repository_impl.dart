@@ -1,7 +1,6 @@
-import 'dart:convert';
-import 'package:crypto/crypto.dart';
 import 'package:drift/drift.dart';
 import 'package:poultry_accounting/core/constants/app_constants.dart';
+import 'package:poultry_accounting/core/utils/security_utils.dart';
 import 'package:poultry_accounting/data/database/database.dart' as db;
 import 'package:poultry_accounting/domain/entities/user.dart' as domain;
 import 'package:poultry_accounting/domain/repositories/user_repository.dart';
@@ -11,16 +10,9 @@ class UserRepositoryImpl implements UserRepository {
 
   final db.AppDatabase _db;
 
-  String _hashPassword(String password) {
-    // Simple SHA-256 hash. In production, use salt + PBKDF2 or similar.
-    final bytes = utf8.encode(password);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
-
   @override
   Future<domain.User?> login(String username, String password) async {
-    final hash = _hashPassword(password);
+    final hash = SecurityUtils.hashPassword(password);
     
     final query = _db.select(_db.users)
       ..where((tbl) => tbl.username.equals(username))
@@ -39,7 +31,7 @@ class UserRepositoryImpl implements UserRepository {
   Future<domain.User> createUser(domain.User user, String password) async {
     final companion = db.UsersCompanion(
       username: Value(user.username),
-      passwordHash: Value(_hashPassword(password)),
+      passwordHash: Value(SecurityUtils.hashPassword(password)),
       fullName: Value(user.fullName),
       role: Value(user.role.name), // Enum to string
       isActive: Value(user.isActive),
@@ -59,7 +51,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<void> changePassword(int userId, String newPassword) async {
     final companion = db.UsersCompanion(
-      passwordHash: Value(_hashPassword(newPassword)),
+      passwordHash: Value(SecurityUtils.hashPassword(newPassword)),
       updatedAt: Value(DateTime.now()),
     );
     

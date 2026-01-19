@@ -11,9 +11,11 @@ import 'package:poultry_accounting/presentation/pricing/daily_pricing_screen.dar
 import 'package:poultry_accounting/presentation/processing/raw_meat_processing_screen.dart';
 import 'package:poultry_accounting/presentation/products/product_list_screen.dart';
 import 'package:poultry_accounting/presentation/purchases/purchase_list_screen.dart';
+import 'package:poultry_accounting/presentation/reports/customer_statement_screen.dart';
 import 'package:poultry_accounting/presentation/reports/reports_screen.dart';
 import 'package:poultry_accounting/presentation/sales/sales_invoice_list_screen.dart';
 import 'package:poultry_accounting/presentation/suppliers/supplier_list_screen.dart';
+import 'package:poultry_accounting/core/providers/auth_provider.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -30,67 +32,136 @@ class HomeScreen extends ConsumerWidget {
         foregroundColor: Colors.white,
       ),
       drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.green),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            DrawerHeader(
+              padding: EdgeInsets.zero,
+              margin: EdgeInsets.zero,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.green, Color(0xFF1B5E20)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Stack(
                 children: [
-                  Icon(Icons.account_balance, color: Colors.white, size: 48),
-                  SizedBox(height: 10),
-                  Text(
-                    'نظام الدواجن',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
+                  Positioned(
+                    right: -20,
+                    top: -20,
+                    child: Icon(
+                      Icons.account_balance,
+                      size: 150,
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        const CircleAvatar(
+                          radius: 30,
+                          backgroundColor: Colors.white24,
+                          child: Icon(Icons.person, color: Colors.white, size: 35),
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'نظام الدواجن',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          ref.watch(authProvider).user?.fullName ?? 'المسؤول',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            _buildDrawerItem(Icons.dashboard, 'لوحة التحكم', () {
-              Navigator.pop(context); // Close drawer
-            }),
-            _buildDrawerItem(Icons.analytics, 'التقارير التحليلية', () { // New Item
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen()));
-            }),
-            _buildDrawerItem(Icons.people, 'العملاء', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerListScreen()));
-            }),
-            _buildDrawerItem(Icons.inventory, 'المخزون', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const StockDashboardScreen()));
-            }),
-            _buildDrawerItem(Icons.shopping_bag, 'الأصناف (المنتجات)', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen()));
-            }),
-            _buildDrawerItem(Icons.local_shipping, 'الموردين', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierListScreen()));
-            }),
-            _buildDrawerItem(Icons.shopping_cart, 'المشتريات (الوارد)', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const PurchaseListScreen()));
-            }),
-             _buildDrawerItem(Icons.description, 'الفواتير (المبيعات)', () {
-               Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesInvoiceListScreen()));
-             }),
-            _buildDrawerItem(Icons.payments, 'المدفوعات', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentListScreen()));
-            }),
-            _buildDrawerItem(Icons.money_off, 'المصروفات', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const ExpenseListScreen()));
-            }),
-            const Divider(),
-            _buildDrawerItem(Icons.calculate, 'تجهيز الخام (الوزن والنسب)', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const RawMeatProcessingScreen()));
-            }),
-            _buildDrawerItem(Icons.price_change, 'التسعيرة اليومية', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyPricingScreen()));
-            }),
-            _buildDrawerItem(Icons.handshake, 'أرباح الشركاء', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const PartnershipScreen()));
-            }),
-             const Divider(),
-            _buildDrawerItem(Icons.settings, 'الإعدادات والنسخ الاحتياطي', () {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-            }),
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                children: [
+                  _buildDrawerItem(Icons.dashboard, 'لوحة التحكم', () {
+                    Navigator.pop(context);
+                  }),
+                  _buildDrawerItem(Icons.analytics, 'التقارير التحليلية', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen()));
+                  }),
+                  _buildDrawerItem(Icons.contact_page, 'كشف حساب عميل', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerStatementScreen()));
+                  }),
+                  _buildDrawerItem(Icons.people, 'العملاء', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerListScreen()));
+                  }),
+                  _buildDrawerItem(Icons.inventory, 'المخزون', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const StockDashboardScreen()));
+                  }),
+                  _buildDrawerItem(Icons.shopping_bag, 'الأصناف (المنتجات)', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen()));
+                  }),
+                  _buildDrawerItem(Icons.local_shipping, 'الموردين', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierListScreen()));
+                  }),
+                  _buildDrawerItem(Icons.shopping_cart, 'المشتريات (الوارد)', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PurchaseListScreen()));
+                  }),
+                  _buildDrawerItem(Icons.description, 'الفواتير (المبيعات)', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesInvoiceListScreen()));
+                  }),
+                  _buildDrawerItem(Icons.payments, 'المدفوعات', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentListScreen()));
+                  }),
+                  _buildDrawerItem(Icons.money_off, 'المصروفات', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ExpenseListScreen()));
+                  }),
+                  const Divider(indent: 16, endIndent: 16),
+                  _buildDrawerItem(Icons.calculate, 'تجهيز الخام (الوزن والنسب)', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const RawMeatProcessingScreen()));
+                  }),
+                  _buildDrawerItem(Icons.price_change, 'التسعيرة اليومية', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyPricingScreen()));
+                  }),
+                  _buildDrawerItem(Icons.handshake, 'أرباح الشركاء', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PartnershipScreen()));
+                  }),
+                  _buildDrawerItem(Icons.settings, 'الإعدادات والنسخ الاحتياطي', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                  }),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                tileColor: Colors.red.shade50,
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text(
+                  'تسجيل الخروج',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                onTap: () {
+                  ref.read(authProvider.notifier).logout();
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -111,7 +182,7 @@ class HomeScreen extends ConsumerWidget {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return Text('Error: ${snapshot.error}'); // Simple error handling
+                  return Text('خطأ: ${snapshot.error}'); // Simple error handling
                 }
                 final data = snapshot.data!;
                 return Column(
@@ -171,7 +242,7 @@ class HomeScreen extends ConsumerWidget {
                 );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (err, stack) => Text('Error: $err'),
+              error: (err, stack) => Text('خطأ: $err'),
             ),
           ],
         ),
@@ -187,11 +258,24 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title),
-      onTap: onTap,
+  Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap, {Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        leading: Icon(icon, color: color ?? Colors.green.shade700, size: 22),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: color ?? Colors.black87,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        onTap: onTap,
+        dense: true,
+        visualDensity: VisualDensity.compact,
+      ),
     );
   }
 

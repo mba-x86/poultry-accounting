@@ -20,6 +20,7 @@ import 'package:poultry_accounting/domain/repositories/product_repository.dart';
 import 'package:poultry_accounting/domain/repositories/purchase_repository.dart';
 import 'package:poultry_accounting/domain/repositories/report_repository.dart';
 import 'package:poultry_accounting/domain/repositories/supplier_repository.dart';
+import 'package:poultry_accounting/domain/repositories/user_repository.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -75,6 +76,11 @@ final purchaseRepositoryProvider = Provider<PurchaseRepository>((ref) {
 final expenseRepositoryProvider = Provider<ExpenseRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return ExpenseRepositoryImpl(db);
+});
+
+final userRepositoryProvider = Provider<UserRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return UserRepositoryImpl(db);
 });
 
 // Stream Providers for real-time updates
