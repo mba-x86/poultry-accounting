@@ -409,10 +409,22 @@ class ReportRepositoryImpl implements ReportRepository {
     // 5. Build statement
     for (final tx in transactions) {
       if (tx is SalesInvoiceTable) {
+        // Fetch items for this invoice to include in description
+        final itemsQuery = database.select(database.salesInvoiceItems).join([
+          innerJoin(database.products, database.products.id.equalsExp(database.salesInvoiceItems.productId)),
+        ])..where(database.salesInvoiceItems.invoiceId.equals(tx.id));
+        
+        final items = await itemsQuery.get();
+        final itemsDesc = items.map((row) {
+          final item = row.readTable(database.salesInvoiceItems);
+          final prod = row.readTable(database.products);
+          return '${prod.name} (${item.quantity} كغ)';
+        }).join('، ');
+
         balance += tx.total;
         entries.add(CustomerStatementEntry(
           date: tx.invoiceDate,
-          description: 'فاتورة مبيعات',
+          description: 'فاتورة مبيعات: $itemsDesc',
           reference: tx.invoiceNumber,
           debit: tx.total,
           credit: 0,
@@ -422,7 +434,7 @@ class ReportRepositoryImpl implements ReportRepository {
         balance -= tx.amount;
         entries.add(CustomerStatementEntry(
           date: tx.paymentDate,
-          description: 'سند قبض - ${tx.method}',
+          description: 'سند قبض - ${tx.method}${tx.notes != null ? ' (${tx.notes})' : ''}',
           reference: tx.paymentNumber,
           debit: 0,
           credit: tx.amount,

@@ -62,6 +62,7 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
             basketCount: Value(output.basketCount),
             quantity: output.quantity,
             yieldPercentage: output.yieldPercentage,
+            inventoryDate: Value(output.inventoryDate),
           ),
         );
 
@@ -73,7 +74,7 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
             quantity: output.quantity,
             remainingQuantity: output.quantity,
             unitCost: outputUnitCost,
-            purchaseDate: processing.processingDate,
+            purchaseDate: output.inventoryDate ?? processing.processingDate,
             batchNumber: Value('${processing.batchNumber}-${output.productId}'),
           ),
         );
@@ -122,6 +123,7 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
             basketCount: Value(output.basketCount),
             quantity: output.quantity,
             yieldPercentage: output.yieldPercentage,
+            inventoryDate: Value(output.inventoryDate),
           ),
         );
 
@@ -132,7 +134,7 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
             quantity: output.quantity,
             remainingQuantity: output.quantity,
             unitCost: outputUnitCost,
-            purchaseDate: processing.processingDate,
+            purchaseDate: output.inventoryDate ?? processing.processingDate,
             batchNumber: Value('${processing.batchNumber}-${output.productId}'),
           ),
         );
@@ -186,6 +188,7 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
       quantity: row.quantity,
       yieldPercentage: row.yieldPercentage,
       createdAt: row.createdAt,
+      inventoryDate: row.inventoryDate,
     );
   }
 }

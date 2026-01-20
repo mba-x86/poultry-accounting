@@ -31,8 +31,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   
   bool _isLoading = false;
   bool _showPasswordSection = false;
-  bool _otpSent = false;
-  bool _isPhoneVerified = false;
 
   @override
   void initState() {
@@ -213,10 +211,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       );
       return;
     }
-
-    if (!_isPhoneVerified) {
+    
+    if (_newPasswordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء التحقق من رقم الهاتف أولاً'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('الرجاء إدخال كلمة المرور الجديدة'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('كلمة المرور الجديدة غير متطابقة'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -236,11 +241,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _oldPasswordController.clear();
         _newPasswordController.clear();
         _confirmPasswordController.clear();
-        _otpController.clear();
         setState(() {
           _showPasswordSection = false;
-          _otpSent = false;
-          _isPhoneVerified = false;
         });
       }
     } catch (e) {
@@ -256,62 +258,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
-  Future<void> _sendOtp() async {
-    if (_userPhoneController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إدخال رقم الهاتف أولاً'), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    setState(() => _isLoading = true);
-    try {
-      final success = await ref.read(smsServiceProvider).sendVerificationCode(_userPhoneController.text);
-      if (success && mounted) {
-        setState(() {
-          _otpSent = true;
-          _isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إرسال رمز التحقق إلى هاتفك'), backgroundColor: Colors.green),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل إرسال الرمز: $e'), backgroundColor: Colors.red),
-        );
-      }
-    }
-  }
-
-  Future<void> _verifyOtp() async {
-    if (_otpController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إدخال رمز التحقق'), backgroundColor: Colors.red),
-      );
-      return;
-    }
-
-    final verified = ref.read(smsServiceProvider).verifyCode(
-      _userPhoneController.text, 
-      _otpController.text,
-    );
-
-    if (verified) {
-      setState(() {
-        _isPhoneVerified = true;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('تم التحقق من رقم الهاتف بنجاح'), backgroundColor: Colors.green),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رمز التحقق غير صحيح'), backgroundColor: Colors.red),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -401,97 +347,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       if (_showPasswordSection) ...[
                         const Divider(),
                         const SizedBox(height: 8),
-                        if (!_isPhoneVerified) ...[
-                          const Text('لإجراء هذا التغيير، يجب التحقق من رقم هاتف صاحب العمل:', style: TextStyle(fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _userPhoneController,
-                                  decoration: const InputDecoration(
-                                    labelText: 'رقم هاتف صاحب العمل',
-                                    border: OutlineInputBorder(),
-                                  ),
-                                  enabled: !_otpSent,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              ElevatedButton(
-                                onPressed: _isLoading ? null : _sendOtp,
-                                child: Text(_otpSent ? 'إعادة الإرسال' : 'إرسال الرمز'),
-                              ),
-                            ],
+                        TextField(
+                          controller: _oldPasswordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'كلمة المرور الحالية',
+                            border: OutlineInputBorder(),
                           ),
-                          if (_otpSent) ...[
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: TextField(
-                                    controller: _otpController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'رمز التحقق (SMS)',
-                                      border: OutlineInputBorder(),
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                ElevatedButton(
-                                  onPressed: _isLoading ? null : _verifyOtp,
-                                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, foregroundColor: Colors.white),
-                                  child: const Text('تحقق'),
-                                ),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                        ] else ...[
-                          const Row(
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.green),
-                              SizedBox(width: 8),
-                              Text('تم التحقق من رقم الهاتف بنجاح', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-                            ],
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _newPasswordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'كلمة المرور الجديدة',
+                            border: OutlineInputBorder(),
                           ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _oldPasswordController,
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              labelText: 'كلمة المرور الحالية',
-                              border: OutlineInputBorder(),
-                            ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _confirmPasswordController,
+                          obscureText: true,
+                          decoration: const InputDecoration(
+                            labelText: 'تأكيد كلمة المرور الجديدة',
+                            border: OutlineInputBorder(),
                           ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _newPasswordController,
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              labelText: 'كلمة المرور الجديدة',
-                              border: OutlineInputBorder(),
-                            ),
+                        ),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _changePassword,
+                            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                            child: const Text('تحديث كلمة المرور'),
                           ),
-                          const SizedBox(height: 16),
-                          TextField(
-                            controller: _confirmPasswordController,
-                            obscureText: true,
-                            decoration: const InputDecoration(
-                              labelText: 'تأكيد كلمة المرور الجديدة',
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _changePassword,
-                              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
-                              child: const Text('تحديث كلمة المرور'),
-                            ),
-                          ),
-                        ],
+                        ),
                       ],
                     ],
                   ),

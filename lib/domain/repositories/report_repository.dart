@@ -98,9 +98,6 @@ class AgingReportEntry {
   final double total;
 }
 
-  final double total;
-}
-
 /// Daily Processing statistics
 class ProcessingReport {
   const ProcessingReport({
@@ -191,6 +188,7 @@ abstract class ReportRepository {
 
   /// Get customer account statement
   Future<List<CustomerStatementEntry>> getCustomerStatement(
+    int customerId, {
     DateTime? fromDate,
     DateTime? toDate,
   });

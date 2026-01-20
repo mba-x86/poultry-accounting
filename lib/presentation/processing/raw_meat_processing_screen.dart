@@ -335,7 +335,7 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
 
   Widget _buildSortingSummary() {
     final sortedTotal = _outputs.fold<double>(0, (sum, i) => sum + i.quantity);
-    final remaining = (_slaughterNetWeight - sortedTotal).clamp(0, double.infinity);
+    final remaining = (_slaughterNetWeight - sortedTotal).clamp(0.0, double.infinity);
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -371,50 +371,71 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
       } catch (_) {}
     });
 
+    DateTime selectedDate = DateTime.now();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('تخزين الفائض'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('سيتم إضافة $remainingWeight كغ إلى المخزون كأصناف جاهزة للبيع.'),
-            const SizedBox(height: 16),
-            ref.watch(productsStreamProvider).when(
-              data: (prods) => DropdownButtonFormField<Product>(
-                value: selectedProduct,
-                decoration: const InputDecoration(labelText: 'صنف التخزين (دجاج كامل)'),
-                items: prods.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
-                onChanged: (val) => selectedProduct = val,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('تخزين الفائض'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('سيتم إضافة $remainingWeight كغ إلى المخزون كأصناف جاهزة للبيع.'),
+              const SizedBox(height: 16),
+              ref.watch(productsStreamProvider).when(
+                data: (prods) => DropdownButtonFormField<Product>(
+                  value: selectedProduct,
+                  decoration: const InputDecoration(labelText: 'صنف التخزين (دجاج كامل)'),
+                  items: prods.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
+                  onChanged: (val) => selectedProduct = val,
+                ),
+                loading: () => const CircularProgressIndicator(),
+                error: (e, s) => Text('خطأ: $e'),
               ),
-              loading: () => const CircularProgressIndicator(),
-              error: (e, s) => Text('خطأ: $e'),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text('تاريخ دخول المخزن'),
+                subtitle: Text('${selectedDate.year}-${selectedDate.month}-${selectedDate.day}'),
+                trailing: const Icon(Icons.calendar_today),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: selectedDate,
+                    firstDate: DateTime.now().subtract(const Duration(days: 30)),
+                    lastDate: DateTime.now().add(const Duration(days: 30)),
+                  );
+                  if (date != null) {
+                    setDialogState(() => selectedDate = date);
+                  }
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+            ElevatedButton(
+              onPressed: () {
+                if (selectedProduct != null) {
+                  setState(() {
+                    _outputs.add(ProcessingOutput(
+                      processingId: 0, 
+                      productId: selectedProduct!.id!,
+                      quantity: remainingWeight,
+                      yieldPercentage: _slaughterNetWeight > 0 ? (remainingWeight / _slaughterNetWeight) * 100 : 0,
+                      basketCount: 0,
+                      basketWeight: 0,
+                      grossWeight: remainingWeight,
+                      inventoryDate: selectedDate,
+                    ));
+                  });
+                  Navigator.pop(context);
+                }
+              },
+              child: const Text('تأكيد التخزين'),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-          ElevatedButton(
-            onPressed: () {
-              if (selectedProduct != null) {
-                setState(() {
-                  _outputs.add(ProcessingOutput(
-                    processingId: 0, 
-                    productId: selectedProduct!.id!,
-                    quantity: remainingWeight,
-                    yieldPercentage: _slaughterNetWeight > 0 ? (remainingWeight / _slaughterNetWeight) * 100 : 0,
-                    // Surplus is usually just bulk, so we can use single basket or 0
-                    basketCount: 0,
-                    basketWeight: 0,
-                    grossWeight: remainingWeight,
-                  ));
-                });
-                Navigator.pop(context);
-              }
-            },
-            child: const Text('تأكيد التخزين'),
-          ),
-        ],
       ),
     );
   }

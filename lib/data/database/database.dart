@@ -284,6 +284,7 @@ class ProcessingOutputs extends Table {
   RealColumn get quantity => real()(); // This is the Net Weight (Gross - (Basket * Count))
   
   RealColumn get yieldPercentage => real()(); // (quantity / slaughteredNetWeight) * 100
+  DateTimeColumn get inventoryDate => dateTime().nullable()(); // Manual entry for surplus
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -354,7 +355,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -372,8 +373,9 @@ class AppDatabase extends _$AppDatabase {
         // Migration for Processing tables
         await m.createTable(rawMeatProcessings);
         await m.createTable(processingOutputs);
-        // Note: In a real production scenario, we might need to migrate existing data,
-        // but for this MVP, creating/re-creating if necessary is the focus.
+      }
+      if (from < 4) {
+        await m.addColumn(processingOutputs, processingOutputs.inventoryDate);
       }
     },
   );

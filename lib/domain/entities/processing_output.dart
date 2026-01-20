@@ -12,6 +12,7 @@ class ProcessingOutput extends Equatable {
     required this.yieldPercentage,
     this.id,
     this.createdAt,
+    this.inventoryDate,
   });
 
   final int? id;
@@ -23,6 +24,7 @@ class ProcessingOutput extends Equatable {
   final double quantity; // Net weight
   final double yieldPercentage;
   final DateTime? createdAt;
+  final DateTime? inventoryDate;
 
   @override
   List<Object?> get props => [
@@ -35,6 +37,7 @@ class ProcessingOutput extends Equatable {
         quantity,
         yieldPercentage,
         createdAt,
+        inventoryDate,
       ];
 
   ProcessingOutput copyWith({
@@ -47,6 +50,7 @@ class ProcessingOutput extends Equatable {
     double? quantity,
     double? yieldPercentage,
     DateTime? createdAt,
+    DateTime? inventoryDate,
   }) {
     return ProcessingOutput(
       id: id ?? this.id,
@@ -58,6 +62,7 @@ class ProcessingOutput extends Equatable {
       quantity: quantity ?? this.quantity,
       yieldPercentage: yieldPercentage ?? this.yieldPercentage,
       createdAt: createdAt ?? this.createdAt,
+      inventoryDate: inventoryDate ?? this.inventoryDate,
     );
   }
 }
