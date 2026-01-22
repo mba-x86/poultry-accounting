@@ -1,3 +1,4 @@
+export 'annual_inventory_repository_impl.dart';
 export 'backup_repository_impl.dart';
 export 'cash_repository_impl.dart';
 export 'customer_repository_impl.dart';
@@ -9,5 +10,6 @@ export 'product_price_repository_impl.dart';
 export 'product_repository_impl.dart';
 export 'purchase_repository_impl.dart';
 export 'report_repository_impl.dart';
+export 'salary_repository_impl.dart';
 export 'supplier_repository_impl.dart';
 export 'user_repository_impl.dart';

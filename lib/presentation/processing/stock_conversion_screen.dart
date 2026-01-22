@@ -1,0 +1,470 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:poultry_accounting/core/constants/app_constants.dart';
+import 'package:poultry_accounting/core/providers/database_providers.dart';
+import 'package:poultry_accounting/domain/entities/customer.dart';
+import 'package:poultry_accounting/domain/entities/invoice.dart';
+import 'package:poultry_accounting/domain/entities/product.dart';
+import 'package:poultry_accounting/domain/entities/stock_conversion.dart';
+
+class StockConversionScreen extends ConsumerStatefulWidget {
+  const StockConversionScreen({super.key});
+
+  @override
+  ConsumerState<StockConversionScreen> createState() => _StockConversionScreenState();
+}
+
+class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+
+  // Source Selection
+  Product? _sourceProduct;
+  final _sourceQuantityController = TextEditingController();
+  
+  // Output Selection
+  final List<StockConversionItem> _outputs = [];
+  
+  final _notesController = TextEditingController();
+  
+  // Customer Transfer
+  Customer? _selectedCustomer;
+  bool _isTransferring = false;
+
+  @override
+  void dispose() {
+    _sourceQuantityController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  double get _totalSourceQuantity => double.tryParse(_sourceQuantityController.text) ?? 0;
+  
+  double get _totalOutputQuantity => _outputs.fold(0, (sum, item) => sum + item.quantity);
+  
+  double get _processingLoss => (_totalSourceQuantity - _totalOutputQuantity).clamp(0, double.infinity);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('تحويل المخزون (التقطيع)'),
+      ),
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSourceSection(),
+                  const Divider(height: 32),
+                  _buildOutputsSection(),
+                  const SizedBox(height: 24),
+                  _buildSummarySection(),
+                  const SizedBox(height: 24),
+                  _buildCustomerSection(),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _isTransferring ? _saveAndTransfer : _saveConversion,
+                      icon: Icon(_isTransferring ? Icons.send : Icons.save),
+                      label: Text(_isTransferring ? 'حفظ وترحيل للعميل' : 'حفظ التحويل'),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        backgroundColor: _isTransferring ? Colors.blue : Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
+  Widget _buildSourceSection() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('المصدر (الخام)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            ref.watch(productsStreamProvider).when(
+              data: (products) {
+                // Filter only "Whole" products ideally, or show all
+                final wholeProducts = products.where((p) => 
+                  p.name.contains('كامل') || 
+                  p.name.toLowerCase().contains('whole')
+                ).toList();
+                
+                // Fallback to all if no whole found, or just show all
+                final listToShow = wholeProducts.isNotEmpty ? wholeProducts : products;
+
+                return DropdownButtonFormField<Product>(
+                  value: _sourceProduct,
+                  decoration: const InputDecoration(
+                    labelText: 'اختر المنتج المراد تحويله (دجاج كامل)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.inventory),
+                  ),
+                  items: listToShow.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
+                  onChanged: (val) => setState(() => _sourceProduct = val),
+                  validator: (val) => val == null ? 'مطلوب' : null,
+                );
+              },
+              loading: () => const LinearProgressIndicator(),
+              error: (e, _) => Text('Error: $e'),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _sourceQuantityController,
+              decoration: const InputDecoration(
+                labelText: 'الكمية المسحوبة (كغ)',
+                border: OutlineInputBorder(),
+                suffixText: 'كغ',
+              ),
+              keyboardType: TextInputType.number,
+              validator: (val) {
+                if (val == null || val.isEmpty) return 'مطلوب';
+                final v = double.tryParse(val);
+                if (v == null || v <= 0) return 'قيمة غير صالحة';
+                return null;
+              },
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOutputsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('النواتج (الأصناف)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            OutlinedButton.icon(
+              onPressed: _showAddOutputDialog,
+              icon: const Icon(Icons.add),
+              label: const Text('إضافة صنف'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (_outputs.isEmpty)
+          const Center(child: Text('لم يتم إضافة أصناف بعد', style: TextStyle(color: Colors.grey)))
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _outputs.length,
+            itemBuilder: (context, index) {
+              final item = _outputs[index];
+              final productId = item.productId;
+              
+              // Resolve product name
+              final productAsync = ref.watch(productsStreamProvider);
+              String productName = 'Product #$productId';
+              productAsync.whenData((products) {
+                try {
+                  productName = products.firstWhere((p) => p.id == productId).name;
+                } catch (_) {}
+              });
+
+              return Card(
+                color: Colors.blue.shade50,
+                child: ListTile(
+                  title: Text(productName, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  subtitle: Text('${item.quantity} كغ (${item.yieldPercentage.toStringAsFixed(1)}%)'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => setState(() => _outputs.removeAt(index)),
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSummarySection() {
+    return Card(
+      color: Colors.grey.shade100,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _summaryRow('الكمية المسحوبة:', '${_totalSourceQuantity.toStringAsFixed(2)} كغ'),
+            const Divider(),
+            _summaryRow('إجمالي النواتج:', '${_totalOutputQuantity.toStringAsFixed(2)} كغ', isBold: true),
+            _summaryRow('الفاقد (هدر/عظم):', '${_processingLoss.toStringAsFixed(2)} كغ', 
+              color: _processingLoss > (_totalSourceQuantity * 0.3) ? Colors.red : Colors.orange), // Warn if > 30% loss
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _summaryRow(String label, String value, {bool isBold = false, Color? color}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontWeight: isBold ? FontWeight.bold : FontWeight.normal)),
+          Text(value, style: TextStyle(
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+            color: color ?? Colors.black,
+            fontSize: isBold ? 16 : 14,
+          )),
+        ],
+      ),
+    );
+  }
+
+  void _showAddOutputDialog() {
+    if (_totalSourceQuantity <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يرجى تحديد الكمية المسحوبة أولاً')));
+      return;
+    }
+
+    Product? selectedProduct;
+    final qtyController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('إضافة ناتج'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ref.watch(productsStreamProvider).when(
+              data: (products) => DropdownButtonFormField<Product>(
+                decoration: const InputDecoration(labelText: 'الصنف الناتج'),
+                items: products
+                  .where((p) => p.id != _sourceProduct?.id) // Don't allow converting to same product
+                  .map((p) => DropdownMenuItem(value: p, child: Text(p.name)))
+                  .toList(),
+                onChanged: (val) => selectedProduct = val,
+              ),
+              loading: () => const CircularProgressIndicator(),
+              error: (_, __) => const Text('Error'),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: qtyController,
+              decoration: const InputDecoration(labelText: 'الكمية (كغ)', border: OutlineInputBorder()),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
+          ElevatedButton(
+            onPressed: () {
+              final qty = double.tryParse(qtyController.text);
+              if (selectedProduct != null && qty != null && qty > 0) {
+                // Calculate Yield
+                final yieldPct = (qty / _totalSourceQuantity) * 100;
+                
+                setState(() {
+                  _outputs.add(StockConversionItem(
+                    conversionId: 0, 
+                    productId: selectedProduct!.id!, 
+                    quantity: qty, 
+                    yieldPercentage: yieldPct, 
+                    unitCost: 0, // Calculated in repo
+                  ));
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('إضافة'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCustomerSection() {
+    return Card(
+      color: Colors.indigo.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            CheckboxListTile(
+              value: _isTransferring,
+              onChanged: (val) => setState(() => _isTransferring = val ?? false),
+              title: const Text('ترحيل مباشر لحساب العميل', style: TextStyle(fontWeight: FontWeight.bold)),
+              subtitle: const Text('سيتم إنشاء فاتورة مبيعات تلقائياً بهذه الأصناف'),
+              secondary: const Icon(Icons.person_add),
+            ),
+            if (_isTransferring) ...[
+              const Divider(),
+              ref.watch(customersStreamProvider).when(
+                data: (customers) => DropdownButtonFormField<Customer>(
+                  value: _selectedCustomer,
+                  decoration: const InputDecoration(
+                    labelText: 'اختر العميل',
+                    prefixIcon: Icon(Icons.person),
+                    border: OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
+                  ),
+                  items: customers.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
+                  onChanged: (val) => setState(() => _selectedCustomer = val),
+                  validator: (val) => _isTransferring && val == null ? 'يرجى اختيار العميل' : null,
+                ),
+                loading: () => const LinearProgressIndicator(),
+                error: (e, _) => Text('Error: $e'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _saveAndTransfer() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_outputs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يجب إضافة صنف واحد على الأقل')));
+      return;
+    }
+    if (_selectedCustomer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يرجى اختيار العميل أولاً')));
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // 1. Perform Conversion
+      final conversion = StockConversion(
+        conversionDate: DateTime.now(),
+        sourceProductId: _sourceProduct!.id!,
+        sourceQuantity: _totalSourceQuantity,
+        notes: _notesController.text,
+        createdBy: 1,
+      );
+
+      final conversionId = await ref.read(stockConversionRepositoryProvider).convertStock(
+        conversion: conversion,
+        items: _outputs,
+      );
+
+      // 2. Create Sales Invoice
+      final invoiceItems = _outputs.map((output) {
+         // Using safe default price lookup if possible or 0, user can edit later if needed, 
+         // but ideally we fetch prices. For MVP, we might set price to 0 or try to fetch.
+         // Since this is sync, let's look up price from products list if available in scope 
+         // or mostly importantly just create the item.
+         return InvoiceItem(
+           productId: output.productId, 
+           productName: 'Generated', // Should be fetched, simplified here
+           quantity: output.quantity, 
+           unitPrice: 0, // Needs pricing logic
+           costAtSale: 0,
+         );
+      }).toList();
+
+      // We need product names and prices.
+      final products = await ref.read(productsStreamProvider.future);
+      final priceRepo = ref.read(priceRepositoryProvider);
+      
+      final enrichedItems = <InvoiceItem>[];
+      for (var output in _outputs) {
+        final product = products.firstWhere((p) => p.id == output.productId);
+        final priceObj = await priceRepo.getLatestPrice(product.id!);
+        enrichedItems.add(InvoiceItem(
+           productId: product.id!,
+           productName: product.name,
+           quantity: output.quantity,
+           unitPrice: priceObj?.price ?? product.defaultPrice,
+           costAtSale: 0, // Logic handles it
+        ));
+      }
+
+      final invoiceRepo = ref.read(invoiceRepositoryProvider);
+      final invNum = await invoiceRepo.generateInvoiceNumber();
+      
+      final invoice = Invoice(
+        invoiceNumber: invNum,
+        customerId: _selectedCustomer!.id!,
+        invoiceDate: DateTime.now(),
+        status: InvoiceStatus.confirmed, // Auto-confirmed? Or Draft? Let's say Confirmed for Direct Transfer
+        items: enrichedItems,
+        discount: 0,
+        tax: 0,
+        paidAmount: 0,
+        notes: 'تم إنشاؤها تلقائياً من عملية التحويل رقم $conversionId',
+      );
+
+      await invoiceRepo.createInvoice(invoice);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم التحويل وإنشاء الفاتورة بنجاح')));
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _saveConversion() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_outputs.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يجب إضافة صنف واحد على الأقل')));
+      return;
+    }
+    if (_processingLoss < 0) {
+       // Should not happen with clamp, but logic check
+       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('النواتج أكبر من المصدر!')));
+       return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final conversion = StockConversion(
+        conversionDate: DateTime.now(),
+        sourceProductId: _sourceProduct!.id!,
+        sourceQuantity: _totalSourceQuantity,
+        notes: _notesController.text,
+        createdBy: 1, // Default admin
+      );
+
+      await ref.read(stockConversionRepositoryProvider).convertStock(
+        conversion: conversion,
+        items: _outputs,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ عملية التحويل بنجاح')));
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+}

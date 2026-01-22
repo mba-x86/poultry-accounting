@@ -1,13 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultry_accounting/data/database/database.dart';
 import 'package:poultry_accounting/data/repositories/repositories.dart';
+import 'package:poultry_accounting/domain/entities/annual_inventory.dart';
 import 'package:poultry_accounting/domain/entities/cash_transaction.dart';
 import 'package:poultry_accounting/domain/entities/customer.dart';
 import 'package:poultry_accounting/domain/entities/expense.dart';
 import 'package:poultry_accounting/domain/entities/invoice.dart';
 import 'package:poultry_accounting/domain/entities/product.dart';
 import 'package:poultry_accounting/domain/entities/purchase_invoice.dart';
+import 'package:poultry_accounting/domain/entities/salary.dart';
 import 'package:poultry_accounting/domain/entities/supplier.dart';
+import 'package:poultry_accounting/domain/repositories/annual_inventory_repository.dart';
 import 'package:poultry_accounting/domain/repositories/backup_repository.dart';
 import 'package:poultry_accounting/domain/repositories/customer_repository.dart';
 import 'package:poultry_accounting/domain/repositories/expense_repository.dart';
@@ -19,8 +22,11 @@ import 'package:poultry_accounting/domain/repositories/invoice_repository.dart';
 import 'package:poultry_accounting/domain/repositories/product_repository.dart';
 import 'package:poultry_accounting/domain/repositories/purchase_repository.dart';
 import 'package:poultry_accounting/domain/repositories/report_repository.dart';
+import 'package:poultry_accounting/domain/repositories/salary_repository.dart';
 import 'package:poultry_accounting/domain/repositories/supplier_repository.dart';
 import 'package:poultry_accounting/domain/repositories/user_repository.dart';
+import 'package:poultry_accounting/domain/repositories/stock_conversion_repository.dart';
+import 'package:poultry_accounting/data/repositories/stock_conversion_repository_impl.dart';
 
 final databaseProvider = Provider<AppDatabase>((ref) {
   final db = AppDatabase();
@@ -83,6 +89,21 @@ final userRepositoryProvider = Provider<UserRepository>((ref) {
   return UserRepositoryImpl(db);
 });
 
+final salaryRepositoryProvider = Provider<SalaryRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return SalaryRepositoryImpl(db);
+});
+
+final annualInventoryRepositoryProvider = Provider<AnnualInventoryRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return AnnualInventoryRepositoryImpl(db);
+});
+
+final stockConversionRepositoryProvider = Provider<StockConversionRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return StockConversionRepositoryImpl(db);
+});
+
 // Stream Providers for real-time updates
 final customersStreamProvider = StreamProvider<List<Customer>>((ref) {
   final repo = ref.watch(customerRepositoryProvider);
@@ -122,6 +143,16 @@ final expensesStreamProvider = StreamProvider<List<Expense>>((ref) {
 final invoicesStreamProvider = StreamProvider<List<Invoice>>((ref) {
   final repo = ref.read(invoiceRepositoryProvider);
   return repo.watchAllInvoices();
+});
+
+final salariesStreamProvider = StreamProvider<List<Salary>>((ref) {
+  final repo = ref.read(salaryRepositoryProvider);
+  return repo.watchAllSalaries();
+});
+
+final annualInventoriesStreamProvider = StreamProvider<List<AnnualInventory>>((ref) {
+  final repo = ref.read(annualInventoryRepositoryProvider);
+  return repo.watchAllInventories();
 });
 
 final boxBalanceProvider = FutureProvider<double>((ref) {

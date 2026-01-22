@@ -84,6 +84,21 @@ class _SalesInvoiceFormScreenState extends ConsumerState<SalesInvoiceFormScreen>
                   children: [
                     _buildCustomerSelector(),
                     const SizedBox(height: 16),
+                    _buildCustomerSelector(),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('الأصناف', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        ElevatedButton.icon(
+                          onPressed: _showAddItemDialog,
+                          icon: const Icon(Icons.add_shopping_cart),
+                          label: const Text('إضافة صنف'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent, foregroundColor: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
                     Expanded(child: _buildItemsTable()),
                   ],
                 ),
@@ -99,12 +114,6 @@ class _SalesInvoiceFormScreenState extends ConsumerState<SalesInvoiceFormScreen>
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddItemDialog,
-        label: const Text('إضافة صنف'),
-        icon: const Icon(Icons.add_shopping_cart),
-        backgroundColor: Colors.blueAccent,
       ),
     );
   }

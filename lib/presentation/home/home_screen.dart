@@ -9,11 +9,18 @@ import 'package:poultry_accounting/presentation/partnership/partnership_screen.d
 import 'package:poultry_accounting/presentation/payments/payment_list_screen.dart';
 import 'package:poultry_accounting/presentation/pricing/daily_pricing_screen.dart';
 import 'package:poultry_accounting/presentation/processing/raw_meat_processing_screen.dart';
+import 'package:poultry_accounting/presentation/processing/stock_conversion_screen.dart';
 import 'package:poultry_accounting/presentation/products/product_list_screen.dart';
 import 'package:poultry_accounting/presentation/purchases/purchase_list_screen.dart';
+import 'package:poultry_accounting/presentation/pricing/daily_pricing_screen.dart';
+import 'package:poultry_accounting/presentation/pricing/live_chicken_pricing_screen.dart';
 import 'package:poultry_accounting/presentation/reports/customer_statement_screen.dart';
+import 'package:poultry_accounting/presentation/reports/supplier_statement_screen.dart';
+import 'package:poultry_accounting/presentation/reports/central_debt_register_screen.dart';
 import 'package:poultry_accounting/presentation/reports/reports_screen.dart';
 import 'package:poultry_accounting/presentation/sales/sales_invoice_list_screen.dart';
+import 'package:poultry_accounting/presentation/annual_returns/annual_inventories_screen.dart';
+import 'package:poultry_accounting/presentation/salaries/salary_list_screen.dart';
 import 'package:poultry_accounting/presentation/suppliers/supplier_list_screen.dart';
 import 'package:poultry_accounting/core/providers/auth_provider.dart';
 
@@ -95,49 +102,98 @@ class HomeScreen extends ConsumerWidget {
                   _buildDrawerItem(Icons.dashboard, 'لوحة التحكم', () {
                     Navigator.pop(context);
                   }),
-                  _buildDrawerItem(Icons.analytics, 'التقارير التحليلية', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen()));
-                  }),
-                  _buildDrawerItem(Icons.contact_page, 'كشف حساب عميل', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerStatementScreen()));
-                  }),
-                  _buildDrawerItem(Icons.people, 'العملاء', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerListScreen()));
-                  }),
-                  _buildDrawerItem(Icons.inventory, 'المخزون', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const StockDashboardScreen()));
-                  }),
-                  _buildDrawerItem(Icons.shopping_bag, 'الأصناف (المنتجات)', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen()));
-                  }),
-                  _buildDrawerItem(Icons.local_shipping, 'الموردين', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierListScreen()));
-                  }),
-                  _buildDrawerItem(Icons.shopping_cart, 'المشتريات (الوارد)', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PurchaseListScreen()));
-                  }),
-                  _buildDrawerItem(Icons.description, 'الفواتير (المبيعات)', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesInvoiceListScreen()));
-                  }),
-                  _buildDrawerItem(Icons.payments, 'المدفوعات', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentListScreen()));
-                  }),
-                  _buildDrawerItem(Icons.money_off, 'المصروفات', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const ExpenseListScreen()));
-                  }),
-                  const Divider(indent: 16, endIndent: 16),
-                  _buildDrawerItem(Icons.calculate, 'تجهيز الخام (الوزن والنسب)', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const RawMeatProcessingScreen()));
-                  }),
-                  _buildDrawerItem(Icons.price_change, 'التسعيرة اليومية', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyPricingScreen()));
-                  }),
-                  _buildDrawerItem(Icons.handshake, 'أرباح الشركاء', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PartnershipScreen()));
-                  }),
-                  _buildDrawerItem(Icons.settings, 'الإعدادات والنسخ الاحتياطي', () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
-                  }),
+                  
+                  _buildExpansionTile(
+                    Icons.home, 
+                    'الرئيسية', 
+                    [
+                      _buildDrawerItem(Icons.analytics, 'التقارير التحليلية', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen()));
+                      }),
+                    ],
+                  ),
+
+                  _buildExpansionTile(
+                    Icons.trending_up, 
+                    'المبيعات والعملاء', 
+                    [
+                      _buildDrawerItem(Icons.people, 'العملاء', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerListScreen()));
+                      }),
+                      _buildDrawerItem(Icons.contact_page, 'كشف حساب عميل', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerStatementScreen()));
+                      }),
+                      _buildDrawerItem(Icons.description, 'الفواتير (المبيعات)', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesInvoiceListScreen()));
+                      }),
+                      _buildDrawerItem(Icons.payments, 'المدفوعات', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const PaymentListScreen()));
+                      }),
+                      _buildDrawerItem(Icons.price_check, 'تسعيرة الأصناف', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyPricingScreen()));
+                      }),
+                    ],
+                  ),
+
+                  _buildExpansionTile(
+                    Icons.inventory_2, 
+                    'المخزون والمشتريات', 
+                    [
+                      _buildDrawerItem(Icons.shopping_bag, 'الأصناف (المنتجات)', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen()));
+                      }),
+                      _buildDrawerItem(Icons.inventory, 'المخزون', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const StockDashboardScreen()));
+                      }),
+                      _buildDrawerItem(Icons.shopping_cart, 'الواردات', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const PurchaseListScreen()));
+                      }),
+                      _buildDrawerItem(Icons.local_shipping, 'الموردين', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierListScreen()));
+                      }),
+                      _buildDrawerItem(Icons.contact_mail, 'كشف حساب مورد', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierStatementScreen()));
+                      }),
+                    ],
+                  ),
+
+                  _buildExpansionTile(
+                    Icons.account_balance_wallet, 
+                    'المالية', 
+                    [
+                      _buildDrawerItem(Icons.money_off, 'المصروفات التشغيلية', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ExpenseListScreen()));
+                      }),
+                      _buildDrawerItem(Icons.badge, 'الرواتب والأجور', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SalaryListScreen()));
+                      }),
+                      _buildDrawerItem(Icons.event_repeat, 'الجرد السنوي', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const AnnualInventoriesScreen()));
+                      }),
+                      _buildDrawerItem(Icons.account_balance, 'سجل الديون الموحد', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const CentralDebtRegisterScreen()));
+                      }),
+                      _buildDrawerItem(Icons.handshake, 'أرباح الشركاء', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const PartnershipScreen()));
+                      }),
+                    ],
+                  ),
+
+                  _buildExpansionTile(
+                    Icons.settings_suggest, 
+                    'الإدارة والنظام', 
+                    [
+                      _buildDrawerItem(Icons.calculate, 'تجهيز الخام (الوزن والنسب)', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const RawMeatProcessingScreen()));
+                      }),
+                      _buildDrawerItem(Icons.cut, 'تحويل المخزون (التقطيع)', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const StockConversionScreen()));
+                      }),
+                      _buildDrawerItem(Icons.settings, 'الإعدادات والنسخ الاحتياطي', () {
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                      }),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -258,23 +314,44 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildExpansionTile(IconData icon, String title, List<Widget> children) {
+    return Theme(
+      data: ThemeData().copyWith(dividerColor: Colors.transparent),
+      child: ExpansionTile(
+        leading: Icon(icon, color: Colors.green.shade800),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 15,
+            color: Colors.black87,
+          ),
+        ),
+        iconColor: Colors.green,
+        childrenPadding: const EdgeInsets.only(right: 12),
+        children: children,
+      ),
+    );
+  }
+
   Widget _buildDrawerItem(IconData icon, String title, VoidCallback onTap, {Color? color}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 1),
       child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        leading: Icon(icon, color: color ?? Colors.green.shade700, size: 22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        leading: Icon(icon, color: color ?? Colors.green.shade600, size: 20),
         title: Text(
           title,
           style: TextStyle(
             color: color ?? Colors.black87,
-            fontSize: 14,
+            fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
         ),
         onTap: onTap,
         dense: true,
         visualDensity: VisualDensity.compact,
+        hoverColor: Colors.green.shade50,
       ),
     );
   }

@@ -147,6 +147,31 @@ class PurchaseInvoices extends Table {
   DateTimeColumn get deletedAt => dateTime().nullable()();
 }
 
+/// Stock Conversions table (Whole -> Cuts)
+@DataClassName('StockConversionTable')
+class StockConversions extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  DateTimeColumn get conversionDate => dateTime()();
+  IntColumn get sourceProductId => integer().references(Products, #id)();
+  RealColumn get sourceQuantity => real()();
+  TextColumn get batchNumber => text().nullable()();
+  TextColumn get notes => text().nullable()();
+  IntColumn get createdBy => integer().references(Users, #id)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
+/// Stock Conversion Items (Outputs)
+@DataClassName('StockConversionItemTable')
+class StockConversionItems extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get conversionId => integer().references(StockConversions, #id, onDelete: KeyAction.cascade)();
+  IntColumn get productId => integer().references(Products, #id)();
+  RealColumn get quantity => real()();
+  RealColumn get yieldPercentage => real()();
+  RealColumn get unitCost => real()(); // Calculated from source cost
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+}
+
 /// Purchase Invoice Items table
 @DataClassName('PurchaseInvoiceItemTable')
 class PurchaseInvoiceItems extends Table {
@@ -325,6 +350,33 @@ class CashTransactions extends Table {
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
+/// Salaries table
+@DataClassName('SalaryTable')
+class Salaries extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  RealColumn get amount => real()();
+  DateTimeColumn get salaryDate => dateTime()();
+  TextColumn get employeeName => text().withLength(min: 1, max: 100)();
+  TextColumn get notes => text().nullable()();
+  IntColumn get createdBy => integer().references(Users, #id)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+}
+
+/// Annual Inventory table
+@DataClassName('AnnualInventoryTable')
+class AnnualInventories extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  RealColumn get amount => real()();
+  DateTimeColumn get inventoryDate => dateTime()();
+  TextColumn get description => text().withLength(max: 200)();
+  IntColumn get createdBy => integer().references(Users, #id)();
+  DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  DateTimeColumn get updatedAt => dateTime().nullable()();
+  DateTimeColumn get deletedAt => dateTime().nullable()();
+}
+
 // ============================================================================
 // DATABASE CLASS
 // ============================================================================
@@ -350,12 +402,16 @@ class CashTransactions extends Table {
   Partners,
   PartnerTransactions,
   CashTransactions,
+  Salaries,
+  AnnualInventories,
+  StockConversions,
+  StockConversionItems,
 ],)
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 7;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -376,6 +432,38 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4) {
         await m.addColumn(processingOutputs, processingOutputs.inventoryDate);
+      }
+      if (from < 5) {
+        await m.createTable(salaries);
+        await m.createTable(annualInventories);
+      }
+      if (from < 6) {
+        // Reset admin password to ensure access
+        final hashedPassword = SecurityUtils.hashPassword(AppConstants.defaultAdminPassword);
+        
+        // Check if admin exists
+        final adminUser = await (select(users)..where((t) => t.username.equals(AppConstants.defaultAdminUsername))).getSingleOrNull();
+        
+        if (adminUser != null) {
+          // Update existing admin
+          await (update(users)..where((t) => t.username.equals(AppConstants.defaultAdminUsername))).write(
+            UsersCompanion(passwordHash: Value(hashedPassword)),
+          );
+        } else {
+          // Create admin if missing
+          await into(users).insert(
+            UsersCompanion.insert(
+              username: AppConstants.defaultAdminUsername,
+              passwordHash: hashedPassword,
+              fullName: 'مدير النظام',
+              role: UserRole.admin.code,
+            ),
+          );
+        }
+      }
+      if (from < 7) {
+        await m.createTable(stockConversions);
+        await m.createTable(stockConversionItems);
       }
     },
   );
@@ -398,7 +486,6 @@ class AppDatabase extends _$AppDatabase {
     final defaultCategories = [
       'وقود',
       'كهرباء',
-      'رواتب',
       'صيانة',
       'تبريد',
       'نقل',

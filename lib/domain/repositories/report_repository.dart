@@ -7,6 +7,7 @@ class DashboardMetrics {
     required this.todaySales,
     required this.todayReceipts,
     required this.todayExpenses,
+    required this.todaySalaries,
     required this.totalCustomers,
     required this.totalOutstanding,
     required this.overdueInvoices,
@@ -16,6 +17,7 @@ class DashboardMetrics {
   final double todaySales;
   final double todayReceipts;
   final double todayExpenses;
+  final double todaySalaries;
   final int totalCustomers;
   final double totalOutstanding;
   final int overdueInvoices;
@@ -28,14 +30,20 @@ class ProfitLossReport {
     required this.revenue,
     required this.cost,
     required this.expenses,
+    required this.salaries,
+    required this.annualInventories,
     required this.profit,
+    required this.netProfit,
     required this.profitMargin,
   });
 
   final double revenue;
   final double cost;
-  final double expenses;
-  final double profit;
+  final double expenses; // Operating expenses (no salaries)
+  final double salaries;
+  final double annualInventories;
+  final double profit; // Gross/Operating profit
+  final double netProfit; // After salaries and returns
   final double profitMargin;
 }
 
@@ -73,6 +81,29 @@ class CustomerStatementEntry {
   final double debit;
   final double credit;
   final double balance;
+}
+
+/// Supplier statement entry
+class SupplierStatementEntry {
+  const SupplierStatementEntry({
+    required this.date,
+    required this.description,
+    required this.reference,
+    required this.debit, // We paid them (Payments)
+    required this.credit, // We owe them (Purchases)
+    required this.balance,
+    this.isPaid = false,
+    this.type = 'purchase', // 'purchase', 'payment', 'opening'
+  });
+
+  final DateTime date;
+  final String description;
+  final String reference;
+  final double debit;
+  final double credit;
+  final double balance;
+  final bool isPaid;
+  final String type;
 }
 
 /// Aging report entry
@@ -137,6 +168,7 @@ class DailyReport {
     required this.processing,
     required this.sales,
     required this.expenses,
+    required this.salaries,
     required this.netCashFlow,
   });
 
@@ -144,6 +176,7 @@ class DailyReport {
   final ProcessingReport processing;
   final SalesSummary sales;
   final double expenses;
+  final double salaries;
   final double netCashFlow;
 }
 
@@ -189,6 +222,19 @@ abstract class ReportRepository {
   /// Get customer account statement
   Future<List<CustomerStatementEntry>> getCustomerStatement(
     int customerId, {
+    DateTime? fromDate,
+    DateTime? toDate,
+  });
+
+  /// Get supplier account statement
+  Future<List<SupplierStatementEntry>> getSupplierStatement(
+    int supplierId, {
+    DateTime? fromDate,
+    DateTime? toDate,
+  });
+
+  /// Get annual inventories (adjustments)
+  Future<double> getTotalAnnualInventories({
     DateTime? fromDate,
     DateTime? toDate,
   });

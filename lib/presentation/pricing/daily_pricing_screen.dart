@@ -53,15 +53,20 @@ class _DailyPricingScreenState extends ConsumerState<DailyPricingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('تسعيرة الأصناف اليومية'),
-        backgroundColor: Colors.green,
+        title: const Text('التسعيرة اليومية للأصناف'),
+        backgroundColor: Colors.green.shade700,
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: Padding(
+      body: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+        ),
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             _buildDateSelector(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Expanded(
               child: ref.watch(productsStreamProvider).when(
                     loading: () => const Center(child: CircularProgressIndicator()),
@@ -76,21 +81,54 @@ class _DailyPricingScreenState extends ConsumerState<DailyPricingScreen> {
                         _controllers.putIfAbsent(p.id!, TextEditingController.new);
                       }
 
-                      return ListView.builder(
+                      return ListView.separated(
                         itemCount: products.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final product = products[index];
-                          return Card(
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.03),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
                             child: ListTile(
-                              title: Text(product.name),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              leading: CircleAvatar(
+                                backgroundColor: Colors.green.shade50,
+                                child: Icon(Icons.inventory, color: Colors.green.shade700, size: 20),
+                              ),
+                              title: Text(
+                                product.name,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              subtitle: Text(product.unitDisplayName),
                               trailing: SizedBox(
-                                width: 120,
+                                width: 100,
                                 child: TextField(
                                   controller: _controllers[product.id],
-                                  decoration: const InputDecoration(
+                                  textAlign: TextAlign.center,
+                                  decoration: InputDecoration(
                                     suffixText: '₪',
-                                    border: OutlineInputBorder(),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: BorderSide(color: Colors.green.shade200),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: const BorderSide(color: Colors.green, width: 2),
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey.shade50,
                                   ),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                 ),
                               ),
@@ -101,14 +139,19 @@ class _DailyPricingScreenState extends ConsumerState<DailyPricingScreen> {
                     },
                   ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
+              height: 54,
+              child: ElevatedButton.icon(
                 onPressed: _savePrices,
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                child: const Text('حفظ الأسعار', style: TextStyle(fontSize: 18, color: Colors.white)),
+                icon: const Icon(Icons.save, color: Colors.white),
+                label: const Text('حفظ جميع الأسعار', style: TextStyle(fontSize: 18, color: Colors.white, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green.shade700,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 2,
+                ),
               ),
             ),
           ],
@@ -125,6 +168,14 @@ class _DailyPricingScreenState extends ConsumerState<DailyPricingScreen> {
           initialDate: _selectedDate,
           firstDate: DateTime(2020),
           lastDate: DateTime(2100),
+          builder: (context, child) {
+            return Theme(
+              data: Theme.of(context).copyWith(
+                colorScheme: ColorScheme.light(primary: Colors.green.shade700),
+              ),
+              child: child!,
+            );
+          },
         );
         if (picked != null) {
           setState(() => _selectedDate = picked);
@@ -132,20 +183,24 @@ class _DailyPricingScreenState extends ConsumerState<DailyPricingScreen> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey),
-          borderRadius: BorderRadius.circular(8),
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.green.shade200),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            Icon(Icons.calendar_today, color: Colors.green.shade700, size: 20),
+            const SizedBox(width: 12),
             const Text('التاريخ:', style: TextStyle(fontSize: 16)),
+            const Spacer(),
             Text(
               '${_selectedDate.year}-${_selectedDate.month}-${_selectedDate.day}',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green),
             ),
-            const Icon(Icons.calendar_today),
+            const SizedBox(width: 8),
+            const Icon(Icons.arrow_drop_down, color: Colors.green),
           ],
         ),
       ),

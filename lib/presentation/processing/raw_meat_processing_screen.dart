@@ -75,7 +75,7 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
             type: StepperType.horizontal,
             currentStep: _currentStep,
             onStepContinue: () {
-              if (_currentStep < 2) {
+              if (_currentStep < 1) {
                 setState(() => _currentStep++);
               } else {
                 _saveProcessing();
@@ -101,7 +101,7 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: Text(
-                          _currentStep == 2 ? 'حفظ وإكمال العملية' : 'التالي',
+                          _currentStep == 1 ? 'حفظ (تخزين كامل)' : 'التالي',
                           style: const TextStyle(fontSize: 16, color: Colors.white),
                         ),
                       ),
@@ -127,12 +127,6 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
                 isActive: _currentStep >= 1,
                 state: _currentStep > 1 ? StepState.complete : StepState.editing,
                 content: _buildSlaughterSection(),
-              ),
-              Step(
-                title: const Text('فرز الأصناف'),
-                isActive: _currentStep >= 2,
-                state: _currentStep == 2 ? StepState.editing : StepState.indexed,
-                content: _buildSortingSection(),
               ),
             ],
           ),
@@ -179,6 +173,21 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
         _buildSummaryBox('الوزن المذبوح الصافي', _slaughterNetWeight, 'كغ', Colors.green),
         const SizedBox(height: 8),
         _buildSummaryBox('إجمالي النقص (الهالك)', _shrinkageWeight, 'كغ', Colors.orange),
+        const SizedBox(height: 16),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: const ListTile(
+            title: Text('تخزين تلقائي', style: TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('سيتم تخزين كامل الكمية كـ "دجاج كامل" ليتم تقطيعه لاحقاً في قسم تحويل المخزون.'),
+            leading: Icon(Icons.info_outline, color: Colors.blue),
+          ),
+        ),
       ],
     );
   }
@@ -555,10 +564,9 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرجاء التأكد من توزين الدجاج بعد الذبح')));
       return;
     }
-    if (_outputs.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يرجى إضافة صنف مفرز واحد على الأقل')));
-      return;
-    }
+    // Always auto-create whole chicken output
+    await _prepareWholeChickenOutput();
+    if (_outputs.isEmpty) return; // Warning shown in helper
 
     setState(() => _isLoading = true);
     try {
@@ -593,5 +601,39 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _prepareWholeChickenOutput() async {
+    Product? wholeChicken;
+    final products = await ref.read(productsStreamProvider.future);
+    
+    try {
+      wholeChicken = products.firstWhere(
+        (p) => p.name.contains('كامل') || p.name.toLowerCase().contains('whole'),
+      );
+    } catch (_) {
+      // Create if missing
+      // For now, ask user to ensure it exists
+    }
+
+    if (wholeChicken == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('لم يتم العثور على صنف "دجاج كامل". يرجى إضافته في المنتجات أولاً.')),
+      );
+      return;
+    }
+
+    _outputs.clear();
+    _outputs.add(ProcessingOutput(
+      processingId: 0,
+      productId: wholeChicken.id!,
+      quantity: _slaughterNetWeight,
+      yieldPercentage: 100,
+      basketCount: int.tryParse(_slaughterBasketCountController.text) ?? 0,
+      basketWeight: double.tryParse(_slaughterBasketWeightController.text) ?? 0,
+      grossWeight: double.tryParse(_slaughterGrossController.text) ?? 0,
+      inventoryDate: DateTime.now(),
+    ));
   }
 }

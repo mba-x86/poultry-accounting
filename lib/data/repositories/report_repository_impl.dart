@@ -34,6 +34,13 @@ class ReportRepositoryImpl implements ReportRepository {
       ..where(database.expenses.expenseDate.isBiggerOrEqualValue(startOfDay));
       
     final todayExpenses = await expensesQuery.map((row) => row.read(database.expenses.amount.sum())).getSingle() ?? 0.0;
+      
+    // Today's Salaries
+    final salariesQuery = database.selectOnly(database.salaries)
+      ..addColumns([database.salaries.amount.sum()])
+      ..where(database.salaries.salaryDate.isBiggerOrEqualValue(startOfDay));
+    
+    final todaySalaries = await salariesQuery.map((row) => row.read(database.salaries.amount.sum())).getSingle() ?? 0.0;
 
     // Total Customers
     final customersCount = await database.select(database.customers).get().then((l) => l.length);
@@ -65,11 +72,28 @@ class ReportRepositoryImpl implements ReportRepository {
       todaySales: todaySales,
       todayReceipts: todayReceipts,
       todayExpenses: todayExpenses,
+      todaySalaries: todaySalaries,
       totalCustomers: customersCount,
       totalOutstanding: totalOutstanding,
       overdueInvoices: 0, // Placeholder
       lowStockProducts: lowStockCount,
     );
+  }
+
+  @override
+  Future<double> getTotalAnnualInventories({DateTime? fromDate, DateTime? toDate}) async {
+    final amountExp = database.annualInventories.amount.sum();
+    final query = database.selectOnly(database.annualInventories)..addColumns([amountExp]);
+
+    if (fromDate != null) {
+      query.where(database.annualInventories.inventoryDate.isBiggerOrEqualValue(fromDate));
+    }
+    if (toDate != null) {
+      query.where(database.annualInventories.inventoryDate.isSmallerOrEqualValue(toDate));
+    }
+
+    final row = await query.getSingle();
+    return row.read(amountExp) ?? 0.0;
   }
 
   @override
@@ -123,15 +147,33 @@ class ReportRepositoryImpl implements ReportRepository {
 
     final expenses = await expensesQuery.map((row) => row.read(database.expenses.amount.sum())).getSingle() ?? 0.0;
 
-    // 4. Calculate Net Profit
+    // 4. Salaries
+    final salariesQuery = database.selectOnly(database.salaries)
+      ..addColumns([database.salaries.amount.sum()]);
+    if (fromDate != null) salariesQuery.where(database.salaries.salaryDate.isBiggerOrEqualValue(fromDate));
+    if (toDate != null) salariesQuery.where(database.salaries.salaryDate.isSmallerOrEqualValue(toDate));
+    final salaries = await salariesQuery.map((row) => row.read(database.salaries.amount.sum())).getSingle() ?? 0.0;
+
+    // 5. Annual Inventories (Adjustments)
+    final returnsQuery = database.selectOnly(database.annualInventories)
+      ..addColumns([database.annualInventories.amount.sum()]);
+    if (fromDate != null) returnsQuery.where(database.annualInventories.inventoryDate.isBiggerOrEqualValue(fromDate));
+    if (toDate != null) returnsQuery.where(database.annualInventories.inventoryDate.isSmallerOrEqualValue(toDate));
+    final annualInventories = await returnsQuery.map((row) => row.read(database.annualInventories.amount.sum())).getSingle() ?? 0.0;
+
+    // 6. Calculate Profits
     final profit = revenue - cogs - expenses;
-    final profitMargin = revenue > 0 ? (profit / revenue) * 100 : 0.0;
+    final netProfit = profit - salaries - annualInventories;
+    final profitMargin = revenue > 0 ? (netProfit / revenue) * 100 : 0.0;
 
     return ProfitLossReport(
       revenue: revenue,
       cost: cogs,
       expenses: expenses,
+      salaries: salaries,
+      annualInventories: annualInventories,
       profit: profit,
+      netProfit: netProfit,
       profitMargin: profitMargin,
     );
   }
@@ -447,6 +489,95 @@ class ReportRepositoryImpl implements ReportRepository {
   }
 
   @override
+  Future<List<SupplierStatementEntry>> getSupplierStatement(int supplierId, {DateTime? fromDate, DateTime? toDate}) async {
+    final List<SupplierStatementEntry> entries = [];
+    double balance = 0;
+
+    // 1. Calculate opening balance if fromDate is provided
+    if (fromDate != null) {
+      final purchaseQuery = database.selectOnly(database.purchaseInvoices)
+        ..addColumns([database.purchaseInvoices.total.sum()])
+        ..where(database.purchaseInvoices.supplierId.equals(supplierId))
+        ..where(database.purchaseInvoices.status.equals(InvoiceStatus.confirmed.code))
+        ..where(database.purchaseInvoices.invoiceDate.isSmallerThanValue(fromDate));
+      final totalPurchases = await purchaseQuery.map((row) => row.read(database.purchaseInvoices.total.sum())).getSingle() ?? 0.0;
+
+      final paymentsQuery = database.selectOnly(database.payments)
+        ..addColumns([database.payments.amount.sum()])
+        ..where(database.payments.supplierId.equals(supplierId))
+        ..where(database.payments.type.equals('payment'))
+        ..where(database.payments.paymentDate.isSmallerThanValue(fromDate));
+      final totalPayments = await paymentsQuery.map((row) => row.read(database.payments.amount.sum())).getSingle() ?? 0.0;
+      
+      balance = totalPurchases - totalPayments;
+      
+      entries.add(SupplierStatementEntry(
+        date: fromDate,
+        description: 'رصيد سابق',
+        reference: '-',
+        debit: 0,
+        credit: 0,
+        balance: balance,
+        type: 'opening',
+      ));
+    }
+
+    // 2. Fetch Purchase Invoices
+    final purchaseQuery = database.select(database.purchaseInvoices)
+      ..where((tbl) => tbl.supplierId.equals(supplierId))
+      ..where((tbl) => tbl.status.equals(InvoiceStatus.confirmed.code));
+    if (fromDate != null) purchaseQuery.where((tbl) => tbl.invoiceDate.isBiggerOrEqualValue(fromDate));
+    if (toDate != null) purchaseQuery.where((tbl) => tbl.invoiceDate.isSmallerOrEqualValue(toDate));
+    final purchases = await purchaseQuery.get();
+
+    // 3. Fetch Payments
+    final paymentsQuery = database.select(database.payments)
+      ..where((tbl) => tbl.supplierId.equals(supplierId))
+      ..where((tbl) => tbl.type.equals('payment'));
+    if (fromDate != null) paymentsQuery.where((tbl) => tbl.paymentDate.isBiggerOrEqualValue(fromDate));
+    if (toDate != null) paymentsQuery.where((tbl) => tbl.paymentDate.isSmallerOrEqualValue(toDate));
+    final payments = await paymentsQuery.get();
+
+    // 4. Merge and sort
+    final List<dynamic> transactions = [...purchases, ...payments];
+    transactions.sort((a, b) {
+      final dateA = a is PurchaseInvoiceTable ? a.invoiceDate : (a as PaymentTable).paymentDate;
+      final dateB = b is PurchaseInvoiceTable ? b.invoiceDate : (b as PaymentTable).paymentDate;
+      return dateA.compareTo(dateB);
+    });
+
+    // 5. Build statement
+    for (final tx in transactions) {
+      if (tx is PurchaseInvoiceTable) {
+        balance += tx.total;
+        entries.add(SupplierStatementEntry(
+          date: tx.invoiceDate,
+          description: 'فاتورة مشتريات #${tx.invoiceNumber}',
+          reference: tx.invoiceNumber,
+          debit: 0,
+          credit: tx.total,
+          balance: balance,
+          isPaid: tx.paidAmount >= tx.total,
+          type: 'purchase',
+        ));
+      } else if (tx is PaymentTable) {
+        balance -= tx.amount;
+        entries.add(SupplierStatementEntry(
+          date: tx.paymentDate,
+          description: 'سند صرف - ${tx.method}${tx.notes != null ? ' (${tx.notes})' : ''}',
+          reference: tx.paymentNumber,
+          debit: tx.amount,
+          credit: 0,
+          balance: balance,
+          type: 'payment',
+        ));
+      }
+    }
+
+    return entries;
+  }
+
+  @override
   Future<DailyReport> getDailyReport(DateTime date) async {
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1)).subtract(const Duration(milliseconds: 1));
@@ -527,9 +658,13 @@ class ReportRepositoryImpl implements ReportRepository {
       ..where(database.expenses.expenseDate.isBetweenValues(startOfDay, endOfDay));
     final totalExpenses = await expQuery.map((row) => row.read(database.expenses.amount.sum())).getSingle() ?? 0.0;
 
-    // 4. Net Cash Flow (Simple: Confirmed Sales - Expenses)
-    // Note: User might want Receipts - Expenses, but Sales vs Expenses is Profit-like.
-    // For net cash flow per day usually it's Receipts - Payments - Expenses.
+    // 4. Salaries
+    final salaryQuery = database.selectOnly(database.salaries)
+      ..addColumns([database.salaries.amount.sum()])
+      ..where(database.salaries.salaryDate.isBetweenValues(startOfDay, endOfDay));
+    final totalSalariesDaily = await salaryQuery.map((row) => row.read(database.salaries.amount.sum())).getSingle() ?? 0.0;
+
+    // 5. Net Cash Flow
     final receiptsQuery = database.selectOnly(database.cashTransactions)
       ..addColumns([database.cashTransactions.amount.sum()])
       ..where(database.cashTransactions.transactionDate.isBetweenValues(startOfDay, endOfDay))
@@ -547,7 +682,8 @@ class ReportRepositoryImpl implements ReportRepository {
       processing: processingReport,
       sales: salesSummary,
       expenses: totalExpenses,
-      netCashFlow: totalIn - totalOutDirect - totalExpenses,
+      salaries: totalSalariesDaily,
+      netCashFlow: totalIn - totalOutDirect - totalExpenses - totalSalariesDaily,
     );
   }
 

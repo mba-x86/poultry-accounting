@@ -79,6 +79,19 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                   children: [
                     _buildSupplierSelector(),
                     const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('الأصناف', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        ElevatedButton.icon(
+                          onPressed: _showAddItemDialog,
+                          icon: const Icon(Icons.add_shopping_cart),
+                          label: const Text('إضافة صنف'),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, foregroundColor: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
                     Expanded(child: _buildItemsTable()),
                   ],
                 ),
@@ -94,12 +107,6 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddItemDialog,
-        label: const Text('إضافة صنف'),
-        icon: const Icon(Icons.add_shopping_cart),
-        backgroundColor: Colors.blueGrey,
       ),
     );
   }
@@ -232,13 +239,30 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
     Product? selectedProduct;
     final qtyController = TextEditingController();
     final costController = TextEditingController();
+    
+    // Calculator Controllers
+    final grossController = TextEditingController();
+    final tareController = TextEditingController(text: '0.0');
+    final countController = TextEditingController(text: '0');
+
+    void _calculateNet() {
+      final gross = double.tryParse(grossController.text) ?? 0;
+      final count = double.tryParse(countController.text) ?? 0;
+      final tare = double.tryParse(tareController.text) ?? 0;
+      final net = (gross - (count * tare)).clamp(0, double.infinity);
+      if (net > 0) {
+        qtyController.text = net.toStringAsFixed(2);
+      }
+    }
 
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
           title: const Text('إضافة صنف مشتريات'),
-          content: Column(
+          content: SizedBox(
+            width: 600, // Widen the dialog
+            child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               FutureBuilder<List<Product>>(
@@ -261,19 +285,71 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                 },
               ),
               const SizedBox(height: 16),
+              const SizedBox(height: 16),
+              // Weight Calculator Section
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blueGrey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blueGrey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    const Text('حاسبة الوزن (للدجاج الريش)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: grossController,
+                            decoration: const InputDecoration(labelText: 'الوزن القائم', isDense: true),
+                            keyboardType: TextInputType.number,
+                            onChanged: (_) => _calculateNet(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: countController,
+                            decoration: const InputDecoration(labelText: 'عدد الأقفاص', isDense: true),
+                            keyboardType: TextInputType.number,
+                            onChanged: (_) => _calculateNet(),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextField(
+                            controller: tareController,
+                            decoration: const InputDecoration(labelText: 'وزن القفص', isDense: true),
+                            keyboardType: TextInputType.number,
+                            onChanged: (_) => _calculateNet(),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
               TextField(
                 controller: qtyController,
-                decoration: const InputDecoration(labelText: 'الكمية / الوزن', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                  labelText: 'الصافي (الكمية)', 
+                  border: OutlineInputBorder(),
+                  filled: true,
+                ),
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: costController,
-                decoration: const InputDecoration(labelText: 'سعر التكلفة للوحدة', border: OutlineInputBorder()),
+                decoration: const InputDecoration(labelText: 'سعر التكلفة للكيلو', border: OutlineInputBorder()),
                 keyboardType: TextInputType.number,
               ),
             ],
           ),
+        ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
             ElevatedButton(
