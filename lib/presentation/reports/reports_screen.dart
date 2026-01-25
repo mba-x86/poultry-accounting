@@ -36,7 +36,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          unselectedLabelColor: Colors.white.withOpacity(0.85),
           indicatorColor: Colors.white,
           tabs: const [
             Tab(text: 'الأرباح والخسائر'),

@@ -51,6 +51,10 @@ class AppConstants {
   // Default Values
   static const String defaultAdminUsername = 'admin';
   static const String defaultAdminPassword = 'admin123'; // Change in production!
+
+  // System Product IDs
+  static const int liveChickenId = 1;
+  static const int wholeChickenId = 2;
 }
 
 /// User Roles
@@ -128,6 +132,25 @@ enum UnitType {
     return UnitType.values.firstWhere(
       (unit) => unit.code == code,
       orElse: () => UnitType.kilogram,
+    );
+  }
+}
+
+/// Product Type
+enum ProductType {
+  raw('raw', 'خام (حي)'),
+  intermediate('intermediate', 'وسيط (مذبوح كامل)'),
+  finalProduct('final', 'منتج نهائي (أصناف)');
+
+  const ProductType(this.code, this.nameAr);
+
+  final String code;
+  final String nameAr;
+
+  static ProductType fromCode(String code) {
+    return ProductType.values.firstWhere(
+      (type) => type.code == code,
+      orElse: () => ProductType.finalProduct,
     );
   }
 }

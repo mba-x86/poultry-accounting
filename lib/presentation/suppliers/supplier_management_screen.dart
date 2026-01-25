@@ -41,7 +41,7 @@ class _SupplierManagementScreenState extends ConsumerState<SupplierManagementScr
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          unselectedLabelColor: Colors.white.withOpacity(0.85),
           tabs: const [
             Tab(icon: Icon(Icons.business), text: 'قائمة الموردين'),
             Tab(icon: Icon(Icons.assessment), text: 'كشف الحساب'),

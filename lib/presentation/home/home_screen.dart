@@ -29,7 +29,7 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final metricsFuture = ref.watch(reportRepositoryProvider).getDashboardMetrics();
+    final metricsAsync = ref.watch(dashboardMetricsProvider);
     final invoicesAsync = ref.watch(invoicesStreamProvider);
 
     return Scaffold(
@@ -106,16 +106,19 @@ class HomeScreen extends ConsumerWidget {
                   
                   // العملاء
                   _buildDrawerItem(Icons.people, 'العملاء', () {
+                    Navigator.pop(context);
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerManagementScreen()));
                   }, color: Colors.blue),
 
                   // الموردين
                   _buildDrawerItem(Icons.business, 'الموردين', () {
+                    Navigator.pop(context);
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierManagementScreen()));
                   }, color: Colors.orange),
 
                   // المبيعات والتحصيل
                   _buildDrawerItem(Icons.point_of_sale, 'المبيعات والتحصيل', () {
+                    Navigator.pop(context);
                     Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesManagementScreen()));
                   }, color: Colors.green),
 
@@ -127,15 +130,19 @@ class HomeScreen extends ConsumerWidget {
                     'المخزون والواردات', 
                     [
                       _buildDrawerItem(Icons.inventory, 'لوحة المخزون', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const StockDashboardScreen()));
                       }),
                       _buildDrawerItem(Icons.shopping_bag, 'المنتجات', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ProductListScreen()));
                       }),
                       _buildDrawerItem(Icons.shopping_cart, 'الواردات', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const PurchaseListScreen()));
                       }),
                       _buildDrawerItem(Icons.price_check, 'التسعير اليومي', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyPricingScreen()));
                       }),
                     ],
@@ -148,9 +155,11 @@ class HomeScreen extends ConsumerWidget {
                     'المصروفات المالية', 
                     [
                       _buildDrawerItem(Icons.money_off, 'المصروفات التشغيلية', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ExpenseListScreen()));
                       }),
                       _buildDrawerItem(Icons.badge, 'الرواتب والأجور', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const SalaryListScreen()));
                       }),
                     ],
@@ -163,15 +172,19 @@ class HomeScreen extends ConsumerWidget {
                     'التقارير والمالية', 
                     [
                       _buildDrawerItem(Icons.bar_chart, 'التقارير التحليلية', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen()));
                       }),
                       _buildDrawerItem(Icons.account_balance, 'سجل الديون الموحد', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const CentralDebtRegisterScreen()));
                       }),
                       _buildDrawerItem(Icons.event_repeat, 'الجرد السنوي', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const AnnualInventoriesScreen()));
                       }),
                       _buildDrawerItem(Icons.handshake, 'أرباح الشركاء', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const PartnershipScreen()));
                       }),
                     ],
@@ -184,12 +197,15 @@ class HomeScreen extends ConsumerWidget {
                     'الإدارة والنظام', 
                     [
                       _buildDrawerItem(Icons.calculate, 'تجهيز الخام', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const RawMeatProcessingScreen()));
                       }),
                       _buildDrawerItem(Icons.cut, 'تحويل المخزون', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const StockConversionScreen()));
                       }),
                       _buildDrawerItem(Icons.settings_applications, 'الإعدادات', () {
+                        Navigator.pop(context);
                         Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
                       }),
                     ],
@@ -232,36 +248,37 @@ class HomeScreen extends ConsumerWidget {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
-            FutureBuilder(
-              future: metricsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  return Text('خطأ: ${snapshot.error}'); // Simple error handling
-                }
-                final data = snapshot.data!;
-                return Column(
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(child: _buildSummaryCard('إجمالي المبيعات', '${data.todaySales.toStringAsFixed(2)} ₪', Colors.blue)),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildSummaryCard('إجمالي التحصيل', '${data.todayReceipts.toStringAsFixed(2)} ₪', Colors.green)),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(child: _buildSummaryCard('الذمم المستحقة', '${data.totalOutstanding.toStringAsFixed(2)} ₪', Colors.orange)),
-                        const SizedBox(width: 16),
-                        Expanded(child: _buildSummaryCard('المصروفات', '${data.todayExpenses.toStringAsFixed(2)} ₪', Colors.red)),
-                      ],
-                    ),
-                  ],
-                );
-              },
+            const SizedBox(height: 20),
+            metricsAsync.when(
+              data: (data) => Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(child: _buildSummaryCard('إجمالي المبيعات', '${data.todaySales.toStringAsFixed(2)} ₪', Colors.blue)),
+                      const SizedBox(width: 16),
+                      Expanded(child: _buildSummaryCard('إجمالي التحصيل', '${data.todayReceipts.toStringAsFixed(2)} ₪', Colors.green)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(child: _buildSummaryCard('الذمم المستحقة', '${data.totalOutstanding.toStringAsFixed(2)} ₪', Colors.orange)),
+                      const SizedBox(width: 16),
+                      Expanded(child: _buildSummaryCard('المصروفات', '${data.todayExpenses.toStringAsFixed(2)} ₪', Colors.red)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(child: _buildSummaryCard('الواردات (المشتريات)', '${data.todayPurchases.toStringAsFixed(2)} ₪', Colors.deepPurple)),
+                      const SizedBox(width: 16),
+                      Expanded(child: _buildSummaryCard('الرواتب', '${data.todaySalaries.toStringAsFixed(2)} ₪', Colors.brown)),
+                    ],
+                  ),
+                ],
+              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (err, stack) => Center(child: Text('خطأ في تحميل البيانات: $err')),
             ),
             const SizedBox(height: 30),
             const Text(

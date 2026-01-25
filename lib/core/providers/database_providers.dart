@@ -25,6 +25,8 @@ import 'package:poultry_accounting/domain/repositories/report_repository.dart';
 import 'package:poultry_accounting/domain/repositories/salary_repository.dart';
 import 'package:poultry_accounting/domain/repositories/supplier_repository.dart';
 import 'package:poultry_accounting/domain/repositories/user_repository.dart';
+import 'package:poultry_accounting/domain/repositories/payment_repository.dart';
+import 'package:poultry_accounting/domain/entities/payment.dart' as domain;
 import 'package:poultry_accounting/domain/repositories/stock_conversion_repository.dart';
 import 'package:poultry_accounting/data/repositories/stock_conversion_repository_impl.dart';
 
@@ -99,6 +101,11 @@ final annualInventoryRepositoryProvider = Provider<AnnualInventoryRepository>((r
   return AnnualInventoryRepositoryImpl(db);
 });
 
+final paymentRepositoryProvider = Provider<PaymentRepository>((ref) {
+  final db = ref.watch(databaseProvider);
+  return PaymentRepositoryImpl(db);
+});
+
 final stockConversionRepositoryProvider = Provider<StockConversionRepository>((ref) {
   final db = ref.watch(databaseProvider);
   return StockConversionRepositoryImpl(db);
@@ -150,6 +157,11 @@ final salariesStreamProvider = StreamProvider<List<Salary>>((ref) {
   return repo.watchAllSalaries();
 });
 
+final paymentsStreamProvider = StreamProvider<List<domain.Payment>>((ref) {
+  final repo = ref.read(paymentRepositoryProvider) as PaymentRepositoryImpl;
+  return repo.watchAllPayments();
+});
+
 final annualInventoriesStreamProvider = StreamProvider<List<AnnualInventory>>((ref) {
   final repo = ref.read(annualInventoryRepositoryProvider);
   return repo.watchAllInventories();
@@ -158,6 +170,18 @@ final annualInventoriesStreamProvider = StreamProvider<List<AnnualInventory>>((r
 final boxBalanceProvider = FutureProvider<double>((ref) {
   final repo = ref.watch(cashRepositoryProvider);
   return repo.getBalance();
+});
+
+final dashboardMetricsProvider = FutureProvider<DashboardMetrics>((ref) async {
+  // Watch relevant streams to trigger a refresh when data changes
+  ref.watch(invoicesStreamProvider);
+  ref.watch(paymentsStreamProvider);
+  ref.watch(expensesStreamProvider);
+  ref.watch(salariesStreamProvider);
+  ref.watch(purchasesStreamProvider);
+  ref.watch(customersStreamProvider);
+  
+  return ref.read(reportRepositoryProvider).getDashboardMetrics();
 });
 
 final reportRepositoryProvider = Provider<ReportRepository>((ref) {

@@ -98,19 +98,12 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
             const SizedBox(height: 16),
             ref.watch(productsStreamProvider).when(
               data: (products) {
-                // Filter only "Whole" products ideally, or show all
-                final wholeProducts = products.where((p) => 
-                  p.name.contains('كامل') || 
-                  p.name.toLowerCase().contains('whole')
-                ).toList();
-                
-                // Fallback to all if no whole found, or just show all
-                final listToShow = wholeProducts.isNotEmpty ? wholeProducts : products;
+                final listToShow = products.where((p) => p.productType == ProductType.intermediate).toList();
 
                 return DropdownButtonFormField<Product>(
-                  value: _sourceProduct,
+                  value: _sourceProduct ?? (listToShow.isNotEmpty ? listToShow.first : null),
                   decoration: const InputDecoration(
-                    labelText: 'اختر المنتج المراد تحويله (دجاج كامل)',
+                    labelText: 'المنتج المصدر (دجاج كامل)',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.inventory),
                   ),
@@ -253,7 +246,7 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
               data: (products) => DropdownButtonFormField<Product>(
                 decoration: const InputDecoration(labelText: 'الصنف الناتج'),
                 items: products
-                  .where((p) => p.id != _sourceProduct?.id) // Don't allow converting to same product
+                  .where((p) => p.productType == ProductType.finalProduct)
                   .map((p) => DropdownMenuItem(value: p, child: Text(p.name)))
                   .toList(),
                 onChanged: (val) => selectedProduct = val,
@@ -415,7 +408,10 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
       await invoiceRepo.createInvoice(invoice);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم التحويل وإنشاء الفاتورة بنجاح')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('تم التحويل وإنشاء الفاتورة بنجاح'),
+          behavior: SnackBarBehavior.floating,
+        ));
         Navigator.pop(context);
       }
     } catch (e) {
@@ -456,7 +452,10 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ عملية التحويل بنجاح')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('تم حفظ عملية التحويل بنجاح'),
+          behavior: SnackBarBehavior.floating,
+        ));
         Navigator.pop(context);
       }
     } catch (e) {

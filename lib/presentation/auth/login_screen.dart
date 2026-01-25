@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultry_accounting/core/providers/auth_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../home/home_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -14,7 +15,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _rememberMe = false;
   final _formKey = GlobalKey<FormState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedUsername();
+  }
+
+  Future<void> _loadSavedUsername() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedUsername = prefs.getString('saved_username');
+    if (savedUsername != null) {
+      setState(() {
+        _usernameController.text = savedUsername;
+        _rememberMe = true;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -32,6 +51,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
 
     if (success && mounted) {
+      final prefs = await SharedPreferences.getInstance();
+      if (_rememberMe) {
+        await prefs.setString('saved_username', _usernameController.text.trim());
+      } else {
+        await prefs.remove('saved_username');
+      }
+
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
@@ -173,7 +199,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       },
                       onFieldSubmitted: (_) => _handleLogin(),
                     ),
-                    const SizedBox(height: 32),
+                    const SizedBox(height: 12),
+                    CheckboxListTile(
+                      title: const Text('تذكر اسم المستخدم', style: TextStyle(fontSize: 14)),
+                      value: _rememberMe,
+                      onChanged: (val) {
+                        setState(() => _rememberMe = val ?? false);
+                      },
+                      controlAffinity: ListTileControlAffinity.leading,
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: Colors.green,
+                    ),
+                    const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       height: 56,

@@ -10,6 +10,7 @@ export 'product_price_repository_impl.dart';
 export 'product_repository_impl.dart';
 export 'purchase_repository_impl.dart';
 export 'report_repository_impl.dart';
+export 'payment_repository_impl.dart';
 export 'salary_repository_impl.dart';
 export 'supplier_repository_impl.dart';
 export 'user_repository_impl.dart';

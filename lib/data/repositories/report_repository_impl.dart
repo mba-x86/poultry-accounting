@@ -39,8 +39,15 @@ class ReportRepositoryImpl implements ReportRepository {
     final salariesQuery = database.selectOnly(database.salaries)
       ..addColumns([database.salaries.amount.sum()])
       ..where(database.salaries.salaryDate.isBiggerOrEqualValue(startOfDay));
-    
+      
     final todaySalaries = await salariesQuery.map((row) => row.read(database.salaries.amount.sum())).getSingle() ?? 0.0;
+    
+    // Today's Purchases
+    final purchasesQuery = database.selectOnly(database.purchaseInvoices)
+      ..addColumns([database.purchaseInvoices.total.sum()])
+      ..where(database.purchaseInvoices.invoiceDate.isBiggerOrEqualValue(startOfDay));
+      
+    final todayPurchases = await purchasesQuery.map((row) => row.read(database.purchaseInvoices.total.sum())).getSingle() ?? 0.0;
 
     // Total Customers
     final customersCount = await database.select(database.customers).get().then((l) => l.length);
@@ -68,14 +75,25 @@ class ReportRepositoryImpl implements ReportRepository {
     }
     final lowStockCount = productStocks.values.where((q) => q <= 5).length; // Threshold 5
 
+    // Overdue Invoices (not fully paid after 30 days)
+    final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+    final overdueQuery = database.selectOnly(database.salesInvoices)
+      ..addColumns([database.salesInvoices.id.count()])
+      ..where(database.salesInvoices.status.equals(InvoiceStatus.confirmed.code))
+      ..where(database.salesInvoices.invoiceDate.isSmallerThanValue(thirtyDaysAgo))
+      ..where(database.salesInvoices.total.isBiggerThan(database.salesInvoices.paidAmount));
+    
+    final overdueCount = await overdueQuery.map((row) => row.read(database.salesInvoices.id.count())).getSingle() ?? 0;
+
     return DashboardMetrics(
       todaySales: todaySales,
       todayReceipts: todayReceipts,
       todayExpenses: todayExpenses,
       todaySalaries: todaySalaries,
+      todayPurchases: todayPurchases,
       totalCustomers: customersCount,
       totalOutstanding: totalOutstanding,
-      overdueInvoices: 0, // Placeholder
+      overdueInvoices: overdueCount,
       lowStockProducts: lowStockCount,
     );
   }
@@ -265,12 +283,62 @@ class ReportRepositoryImpl implements ReportRepository {
 
   @override
   Future<Map<String, dynamic>> getSalesReport({DateTime? fromDate, DateTime? toDate}) async {
-    return {}; // TODO: Implement
+    final report = await getProductSalesReport(fromDate: fromDate, toDate: toDate);
+    
+    double totalRevenue = 0;
+    double totalProfit = 0;
+    double totalQty = 0;
+    
+    for (final item in report) {
+      totalRevenue += item['totalRevenue'] as double;
+      totalProfit += item['profit'] as double;
+      totalQty += item['totalQuantity'] as double;
+    }
+    
+    return {
+      'revenue': totalRevenue,
+      'profit': totalProfit,
+      'quantity': totalQty,
+      'itemsCount': report.length,
+      'details': report,
+    };
   }
 
   @override
   Future<List<Map<String, dynamic>>> getTopCustomers({int limit = 10, DateTime? fromDate, DateTime? toDate}) async {
-    return []; // TODO: Implement
+    final query = database.select(database.salesInvoices).join([
+      innerJoin(database.customers, database.customers.id.equalsExp(database.salesInvoices.customerId)),
+    ]);
+
+    query.where(database.salesInvoices.status.equals(InvoiceStatus.confirmed.code));
+    if (fromDate != null) query.where(database.salesInvoices.invoiceDate.isBiggerOrEqualValue(fromDate));
+    if (toDate != null) query.where(database.salesInvoices.invoiceDate.isSmallerOrEqualValue(toDate));
+
+    final results = await query.get();
+    final Map<int, Map<String, dynamic>> customerStats = {};
+
+    for (final row in results) {
+      final invoice = row.readTable(database.salesInvoices);
+      final customer = row.readTable(database.customers);
+
+      if (!customerStats.containsKey(customer.id)) {
+        customerStats[customer.id] = {
+          'id': customer.id,
+          'name': customer.name,
+          'totalSales': 0.0,
+          'invoiceCount': 0,
+        };
+      }
+
+      final stats = customerStats[customer.id]!;
+      stats['totalSales'] = (stats['totalSales'] as double) + invoice.total;
+      stats['invoiceCount'] = (stats['invoiceCount'] as int) + 1;
+    }
+
+    final sortedList = customerStats.values.toList()
+      ..sort((a, b) => (b['totalSales'] as double).compareTo(a['totalSales'] as double));
+
+    return sortedList.take(limit).toList();
   }
 
   @override

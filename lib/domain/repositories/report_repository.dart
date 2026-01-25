@@ -8,6 +8,7 @@ class DashboardMetrics {
     required this.todayReceipts,
     required this.todayExpenses,
     required this.todaySalaries,
+    required this.todayPurchases,
     required this.totalCustomers,
     required this.totalOutstanding,
     required this.overdueInvoices,
@@ -18,6 +19,7 @@ class DashboardMetrics {
   final double todayReceipts;
   final double todayExpenses;
   final double todaySalaries;
+  final double todayPurchases;
   final int totalCustomers;
   final double totalOutstanding;
   final int overdueInvoices;

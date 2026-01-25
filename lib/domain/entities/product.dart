@@ -10,6 +10,7 @@ class Product {
     this.defaultPrice = 0.0,
     this.description,
     this.isActive = true,
+    this.productType = ProductType.finalProduct,
     this.currentStock = 0.0,
     this.averageCost = 0.0,
     this.createdAt,
@@ -24,6 +25,7 @@ class Product {
   final double defaultPrice;
   final String? description;
   final bool isActive;
+  final ProductType productType;
   final double currentStock; // Calculated field
   final double averageCost; // Calculated field
   final DateTime? createdAt;
@@ -65,6 +67,7 @@ class Product {
       defaultPrice: defaultPrice ?? this.defaultPrice,
       description: description ?? this.description,
       isActive: isActive ?? this.isActive,
+      productType: productType ?? this.productType,
       currentStock: currentStock ?? this.currentStock,
       averageCost: averageCost ?? this.averageCost,
       createdAt: createdAt ?? this.createdAt,

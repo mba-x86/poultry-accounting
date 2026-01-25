@@ -14,8 +14,11 @@ abstract class ProductRepository {
   /// Search products by name
   Future<List<Product>> searchProducts(String query);
 
-  /// Get active products only
+  /// Get active products only (Final products for sales)
   Future<List<Product>> getActiveProducts();
+
+  /// Get products that can be stored in inventory (Intermediate and Final)
+  Future<List<Product>> getInventoryProducts();
 
   /// Create new product
   Future<int> createProduct(Product product);

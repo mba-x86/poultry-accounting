@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultry_accounting/core/providers/database_providers.dart';
+import 'package:poultry_accounting/core/constants/app_constants.dart';
 import 'package:poultry_accounting/domain/entities/processing_output.dart';
 import 'package:poultry_accounting/domain/entities/product.dart';
 import 'package:poultry_accounting/domain/entities/raw_meat_processing.dart';
@@ -75,7 +76,7 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
             type: StepperType.horizontal,
             currentStep: _currentStep,
             onStepContinue: () {
-              if (_currentStep < 1) {
+              if (_currentStep < 2) {
                 setState(() => _currentStep++);
               } else {
                 _saveProcessing();
@@ -101,7 +102,7 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: Text(
-                          _currentStep == 1 ? 'حفظ (تخزين كامل)' : 'التالي',
+                          _currentStep == 2 ? 'تأكيد وحفظ الدورة' : 'التالي',
                           style: const TextStyle(fontSize: 16, color: Colors.white),
                         ),
                       ),
@@ -127,6 +128,12 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
                 isActive: _currentStep >= 1,
                 state: _currentStep > 1 ? StepState.complete : StepState.editing,
                 content: _buildSlaughterSection(),
+              ),
+              Step(
+                title: const Text('فرز الأصناف'),
+                isActive: _currentStep >= 2,
+                state: _currentStep > 2 ? StepState.complete : StepState.editing,
+                content: _buildSortingSection(),
               ),
             ],
           ),
@@ -564,9 +571,26 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرجاء التأكد من توزين الدجاج بعد الذبح')));
       return;
     }
-    // Always auto-create whole chicken output
-    await _prepareWholeChickenOutput();
-    if (_outputs.isEmpty) return; // Warning shown in helper
+    // If no outputs added in sorting step, offer to store as whole chicken
+    if (_outputs.isEmpty) {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('تخزين كدجاج كامل؟'),
+          content: const Text('لم تقم بفرز أي أصناف. هل تريد تخزين كامل الكمية كـ "دجاج كامل"؟'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('لا، سأقوم بالفرز')),
+            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('نعم، تخزين كامل')),
+          ],
+        ),
+      );
+      
+      if (confirm == true) {
+        await _prepareWholeChickenOutput();
+      } else {
+        return;
+      }
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -584,14 +608,17 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
         netWeight: _slaughterNetWeight,
         totalCost: _totalCost,
         processingDate: DateTime.now(),
-        createdBy: 1, // Default admin id
+        createdBy: 1,
         notes: _notesController.text,
       );
 
       await repo.createProcessing(processing, _outputs);
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تسجيل دورة التجهيز بنجاح')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('تم تسجيل دورة التجهيز بنجاح'),
+          behavior: SnackBarBehavior.floating,
+        ));
         Navigator.pop(context);
       }
     } catch (e) {
@@ -604,30 +631,10 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
   }
 
   Future<void> _prepareWholeChickenOutput() async {
-    Product? wholeChicken;
-    final products = await ref.read(productsStreamProvider.future);
-    
-    try {
-      wholeChicken = products.firstWhere(
-        (p) => p.name.contains('كامل') || p.name.toLowerCase().contains('whole'),
-      );
-    } catch (_) {
-      // Create if missing
-      // For now, ask user to ensure it exists
-    }
-
-    if (wholeChicken == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('لم يتم العثور على صنف "دجاج كامل". يرجى إضافته في المنتجات أولاً.')),
-      );
-      return;
-    }
-
     _outputs.clear();
     _outputs.add(ProcessingOutput(
       processingId: 0,
-      productId: wholeChicken.id!,
+      productId: AppConstants.wholeChickenId,
       quantity: _slaughterNetWeight,
       yieldPercentage: 100,
       basketCount: int.tryParse(_slaughterBasketCountController.text) ?? 0,

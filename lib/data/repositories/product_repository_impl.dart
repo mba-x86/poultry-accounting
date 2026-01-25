@@ -36,6 +36,7 @@ class ProductRepositoryImpl implements ProductRepository {
         isWeighted: Value(product.isWeighted),
         defaultPrice: Value(product.defaultPrice),
         description: Value(product.description),
+        productType: Value(product.productType.code),
       ),
     );
   }
@@ -49,6 +50,7 @@ class ProductRepositoryImpl implements ProductRepository {
         isWeighted: Value(product.isWeighted),
         defaultPrice: Value(product.defaultPrice),
         description: Value(product.description),
+        productType: Value(product.productType.code),
         updatedAt: Value(DateTime.now()),
       ),
     );
@@ -63,7 +65,16 @@ class ProductRepositoryImpl implements ProductRepository {
 
   @override
   Future<List<domain.Product>> getActiveProducts() async {
-    final query = database.select(database.products)..where((t) => t.isActive.equals(true) & t.deletedAt.isNull());
+    final query = database.select(database.products)
+      ..where((t) => t.isActive.equals(true) & t.deletedAt.isNull() & t.productType.equals(ProductType.finalProduct.code));
+    final rows = await query.get();
+    return rows.map(_mapToEntity).toList().cast<domain.Product>();
+  }
+
+  @override
+  Future<List<domain.Product>> getInventoryProducts() async {
+    final query = database.select(database.products)
+      ..where((t) => t.isActive.equals(true) & t.deletedAt.isNull() & t.productType.isIn([ProductType.intermediate.code, ProductType.finalProduct.code]));
     final rows = await query.get();
     return rows.map(_mapToEntity).toList().cast<domain.Product>();
   }
@@ -77,6 +88,7 @@ class ProductRepositoryImpl implements ProductRepository {
       defaultPrice: row.defaultPrice,
       description: row.description,
       isActive: row.isActive,
+      productType: ProductType.fromCode(row.productType),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt,

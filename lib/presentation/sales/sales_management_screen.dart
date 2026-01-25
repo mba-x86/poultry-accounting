@@ -6,6 +6,7 @@ import 'package:poultry_accounting/presentation/payments/payment_form_screen.dar
 import 'package:poultry_accounting/core/constants/app_constants.dart';
 import 'package:poultry_accounting/core/services/pdf_service.dart';
 import 'package:poultry_accounting/domain/entities/invoice.dart';
+import 'package:poultry_accounting/domain/entities/payment.dart';
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -43,7 +44,7 @@ class _SalesManagementScreenState extends ConsumerState<SalesManagementScreen>
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          unselectedLabelColor: Colors.white.withOpacity(0.85),
           tabs: const [
             Tab(icon: Icon(Icons.receipt_long), text: 'الفواتير'),
             Tab(icon: Icon(Icons.payments), text: 'المدفوعات'),
@@ -229,7 +230,7 @@ class _PaymentsTab extends ConsumerWidget {
       children: [
         _buildBalanceSummary(ref),
         Expanded(
-          child: ref.watch(transactionsStreamProvider).when(
+          child: ref.watch(paymentsStreamProvider).when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (err, stack) => Center(child: Text('خطأ: $err')),
             data: (transactions) {
@@ -251,32 +252,48 @@ class _PaymentsTab extends ConsumerWidget {
                 itemCount: transactions.length,
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, index) {
-                  final tx = transactions[index];
-                  final isIn = tx.type == 'in';
+                  final payment = transactions[index];
+                  final isReceipt = payment.type == 'receipt';
                   
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                     child: ListTile(
                       leading: CircleAvatar(
-                        backgroundColor: isIn ? Colors.green.shade100 : Colors.red.shade100,
+                        backgroundColor: isReceipt ? Colors.green.shade100 : Colors.red.shade100,
                         child: Icon(
-                          isIn ? Icons.arrow_downward : Icons.arrow_upward,
-                          color: isIn ? Colors.green : Colors.red,
+                          isReceipt ? Icons.arrow_downward : Icons.arrow_upward,
+                          color: isReceipt ? Colors.green : Colors.red,
                         ),
                       ),
                       title: Text(
-                        tx.description.isEmpty ? (isIn ? 'قبض' : 'صرف') : tx.description,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        payment.customer?.name ?? payment.supplier?.name ?? 'جهة غير معروفة',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(
-                        '${tx.transactionDate.year}-${tx.transactionDate.month}-${tx.transactionDate.day}',
+                        '${payment.paymentNumber} - ${payment.paymentDate.day}/${payment.paymentDate.month}/${payment.paymentDate.year}',
                       ),
-                      trailing: Text(
-                        '${tx.amount} ₪',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: isIn ? Colors.green : Colors.red,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.print, color: Colors.blue),
+                            onPressed: () => _printReceipt(context, ref, payment),
+                            tooltip: 'طباعة وريفيو',
+                          ),
+                          Text(
+                            '${payment.amount.toStringAsFixed(2)} ₪',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: isReceipt ? Colors.green : Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PaymentFormScreen(payment: payment),
                         ),
                       ),
                     ),
@@ -288,6 +305,33 @@ class _PaymentsTab extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _printReceipt(BuildContext context, WidgetRef ref, Payment payment) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final companyName = prefs.getString('company_name');
+      final companyPhone = prefs.getString('company_phone');
+      final companyAddress = prefs.getString('company_address');
+
+      final pdfData = await ref.read(pdfServiceProvider).generatePaymentReceiptPdf(
+            payment: payment,
+            companyName: companyName,
+            companyPhone: companyPhone,
+            companyAddress: companyAddress,
+          );
+
+      await Printing.layoutPdf(
+        onLayout: (format) async => pdfData,
+        name: '${payment.paymentNumber}.pdf',
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في الطباعة: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
   }
 
   Widget _buildBalanceSummary(WidgetRef ref) {

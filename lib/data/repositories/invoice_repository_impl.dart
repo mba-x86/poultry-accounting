@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:poultry_accounting/core/constants/app_constants.dart';
 import 'package:poultry_accounting/data/database/database.dart' as db;
+import 'package:poultry_accounting/domain/entities/customer.dart';
 import 'package:poultry_accounting/domain/entities/invoice.dart';
 import 'package:poultry_accounting/domain/repositories/invoice_repository.dart';
 
@@ -16,27 +17,32 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
     DateTime? fromDate,
     DateTime? toDate,
   }) async {
-    final query = database.select(database.salesInvoices);
+    final query = database.select(database.salesInvoices).join([
+      leftOuterJoin(database.customers, database.customers.id.equalsExp(database.salesInvoices.customerId)),
+    ]);
     
     if (status != null) {
-      query.where((t) => t.status.equals(status.code));
+      query.where(database.salesInvoices.status.equals(status.code));
     }
     if (customerId != null) {
-      query.where((t) => t.customerId.equals(customerId));
+      query.where(database.salesInvoices.customerId.equals(customerId));
     }
     if (fromDate != null) {
-      query.where((t) => t.invoiceDate.isBiggerOrEqualValue(fromDate));
+      query.where(database.salesInvoices.invoiceDate.isBiggerOrEqualValue(fromDate));
     }
     if (toDate != null) {
-      query.where((t) => t.invoiceDate.isSmallerOrEqualValue(toDate));
+      query.where(database.salesInvoices.invoiceDate.isSmallerOrEqualValue(toDate));
     }
     
-    final rows = await query.get();
+    final results = await query.get();
     final List<Invoice> invoices = [];
     
-    for (final row in rows) {
-      final items = await _getInvoiceItems(row.id);
-      invoices.add(_mapToEntity(row, items));
+    for (final row in results) {
+      final invoiceRow = row.readTable(database.salesInvoices);
+      final customerRow = row.readTableOrNull(database.customers);
+      
+      final items = await _getInvoiceItems(invoiceRow.id);
+      invoices.add(_mapToEntity(invoiceRow, items, customer: customerRow != null ? _mapToCustomerEntity(customerRow) : null));
     }
     
     return invoices;
@@ -49,26 +55,31 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
     DateTime? fromDate,
     DateTime? toDate,
   }) {
-    final query = database.select(database.salesInvoices);
+    final query = database.select(database.salesInvoices).join([
+      leftOuterJoin(database.customers, database.customers.id.equalsExp(database.salesInvoices.customerId)),
+    ]);
 
     if (status != null) {
-      query.where((t) => t.status.equals(status.code));
+      query.where(database.salesInvoices.status.equals(status.code));
     }
     if (customerId != null) {
-      query.where((t) => t.customerId.equals(customerId));
+      query.where(database.salesInvoices.customerId.equals(customerId));
     }
     if (fromDate != null) {
-      query.where((t) => t.invoiceDate.isBiggerOrEqualValue(fromDate));
+      query.where(database.salesInvoices.invoiceDate.isBiggerOrEqualValue(fromDate));
     }
     if (toDate != null) {
-      query.where((t) => t.invoiceDate.isSmallerOrEqualValue(toDate));
+      query.where(database.salesInvoices.invoiceDate.isSmallerOrEqualValue(toDate));
     }
 
-    return query.watch().asyncMap((rows) async {
+    return query.watch().asyncMap((results) async {
       final List<Invoice> invoices = [];
-      for (final row in rows) {
-        final items = await _getInvoiceItems(row.id);
-        invoices.add(_mapToEntity(row, items));
+      for (final row in results) {
+        final invoiceRow = row.readTable(database.salesInvoices);
+        final customerRow = row.readTableOrNull(database.customers);
+
+        final items = await _getInvoiceItems(invoiceRow.id);
+        invoices.add(_mapToEntity(invoiceRow, items, customer: customerRow != null ? _mapToCustomerEntity(customerRow) : null));
       }
       return invoices;
     });
@@ -76,26 +87,38 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
 
   @override
   Future<Invoice?> getInvoiceById(int id) async {
-    final query = database.select(database.salesInvoices)..where((t) => t.id.equals(id));
+    final query = database.select(database.salesInvoices).join([
+      leftOuterJoin(database.customers, database.customers.id.equalsExp(database.salesInvoices.customerId)),
+    ])..where(database.salesInvoices.id.equals(id));
+    
     final row = await query.getSingleOrNull();
     if (row == null) {
       return null;
     }
     
-    final items = await _getInvoiceItems(row.id);
-    return _mapToEntity(row, items);
+    final invoiceRow = row.readTable(database.salesInvoices);
+    final customerRow = row.readTableOrNull(database.customers);
+    
+    final items = await _getInvoiceItems(invoiceRow.id);
+    return _mapToEntity(invoiceRow, items, customer: customerRow != null ? _mapToCustomerEntity(customerRow) : null);
   }
 
   @override
   Future<Invoice?> getInvoiceByNumber(String invoiceNumber) async {
-    final query = database.select(database.salesInvoices)..where((t) => t.invoiceNumber.equals(invoiceNumber));
+    final query = database.select(database.salesInvoices).join([
+      leftOuterJoin(database.customers, database.customers.id.equalsExp(database.salesInvoices.customerId)),
+    ])..where(database.salesInvoices.invoiceNumber.equals(invoiceNumber));
+    
     final row = await query.getSingleOrNull();
     if (row == null) {
       return null;
     }
     
-    final items = await _getInvoiceItems(row.id);
-    return _mapToEntity(row, items);
+    final invoiceRow = row.readTable(database.salesInvoices);
+    final customerRow = row.readTableOrNull(database.customers);
+    
+    final items = await _getInvoiceItems(invoiceRow.id);
+    return _mapToEntity(invoiceRow, items, customer: customerRow != null ? _mapToCustomerEntity(customerRow) : null);
   }
 
   @override
@@ -320,6 +343,21 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
     );
   }
 
+  Customer _mapToCustomerEntity(db.CustomerTable row) {
+    return Customer(
+      id: row.id,
+      name: row.name,
+      phone: row.phone,
+      address: row.address,
+      creditLimit: row.creditLimit,
+      notes: row.notes,
+      isActive: row.isActive,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+      deletedAt: row.deletedAt,
+    );
+  }
+
   // Helpers
   Future<List<InvoiceItem>> _getInvoiceItems(int invoiceId) async {
     final query = database.select(database.salesInvoiceItems).join([
@@ -346,11 +384,12 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
     }).toList();
   }
 
-  Invoice _mapToEntity(db.SalesInvoiceTable row, List<InvoiceItem> items) {
+  Invoice _mapToEntity(db.SalesInvoiceTable row, List<InvoiceItem> items, {Customer? customer}) {
     return Invoice(
       id: row.id,
       invoiceNumber: row.invoiceNumber,
       customerId: row.customerId,
+      customer: customer,
       invoiceDate: row.invoiceDate,
       status: InvoiceStatus.fromCode(row.status),
       items: items,

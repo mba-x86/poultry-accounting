@@ -110,7 +110,7 @@ class StockDashboardScreen extends ConsumerWidget {
 
   Future<List<Product>> _fetchProductsWithStock(WidgetRef ref) async {
     final repo = ref.read(productRepositoryProvider);
-    final products = await repo.getActiveProducts();
+    final products = await repo.getInventoryProducts();
     final List<Product> result = [];
     for (final p in products) {
       final withStock = await repo.getProductWithStock(p.id!);

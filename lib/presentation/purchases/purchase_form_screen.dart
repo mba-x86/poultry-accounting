@@ -24,6 +24,7 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
   late TextEditingController _discountController;
   late TextEditingController _additionalCostsController;
   String _invoiceNumber = '';
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -66,47 +67,58 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
         title: Text(widget.invoice == null ? 'فاتورة مشتريات جديدة' : 'تعديل فاتورة مشتريات'),
         backgroundColor: Colors.blueGrey,
       ),
-      body: Form(
-        key: _formKey,
-        child: Row(
-          children: [
-            // Items Side
-            Expanded(
-              flex: 3,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  children: [
-                    _buildSupplierSelector(),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      body: Stack(
+        children: [
+          Form(
+            key: _formKey,
+            child: Row(
+              children: [
+                // Items Side
+                Expanded(
+                  flex: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
                       children: [
-                        const Text('الأصناف', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                        ElevatedButton.icon(
-                          onPressed: _showAddItemDialog,
-                          icon: const Icon(Icons.add_shopping_cart),
-                          label: const Text('إضافة صنف'),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey, foregroundColor: Colors.white),
+                        _buildSupplierSelector(),
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('الأصناف', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            const Spacer(),
+                            const SizedBox(width: 8),
+                            ElevatedButton.icon(
+                              onPressed: _isLoading ? null : _addLiveChickenItem,
+                              icon: const Icon(Icons.airport_shuttle),
+                              label: const Text('توريد دجاج ريش'),
+                              style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 16),
+                        Expanded(child: _buildItemsTable()),
                       ],
                     ),
-                    const SizedBox(height: 16),
-                    Expanded(child: _buildItemsTable()),
-                  ],
+                  ),
                 ),
-              ),
+                // Totals Side
+                Expanded(
+                  child: Container(
+                    color: Colors.grey.shade100,
+                    padding: const EdgeInsets.all(16),
+                    child: _buildSummarySection(),
+                  ),
+                ),
+              ],
             ),
-            // Totals Side
-            Expanded(
-              child: Container(
-                color: Colors.grey.shade100,
-                padding: const EdgeInsets.all(16),
-                child: _buildSummarySection(),
-              ),
+          ),
+          if (_isLoading)
+            Container(
+              color: Colors.black26,
+              child: const Center(child: CircularProgressIndicator()),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -225,6 +237,18 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
     );
   }
 
+  Future<void> _addLiveChickenItem() async {
+    setState(() => _isLoading = true);
+    try {
+      final product = await ref.read(productRepositoryProvider).getProductById(AppConstants.liveChickenId);
+      if (mounted) {
+        _showAddItemDialog(isLive: true, preSelectedProduct: product);
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   Widget _summaryRow(String label, String value, {bool isBold = false, double fontSize = 16, Color? color}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -235,8 +259,9 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
     );
   }
 
-  void _showAddItemDialog() {
-    Product? selectedProduct;
+  void _showAddItemDialog({bool isLive = false, Product? preSelectedProduct}) {
+    Product? selectedProduct = preSelectedProduct;
+
     final qtyController = TextEditingController();
     final costController = TextEditingController();
     
@@ -275,10 +300,12 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                     initialValue: selectedProduct,
                     decoration: const InputDecoration(labelText: 'الصنف'),
                     items: snapshot.data!.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
-                    onChanged: (val) {
+                    onChanged: isLive ? null : (val) {
                       setDialogState(() {
                         selectedProduct = val;
-                        costController.text = val?.defaultPrice.toString() ?? '0.0';
+                        if (val != null) {
+                          costController.text = val.defaultPrice.toString();
+                        }
                       });
                     },
                   );

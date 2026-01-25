@@ -1,12 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultry_accounting/core/providers/database_providers.dart';
+import 'package:poultry_accounting/domain/entities/expense.dart';
 
 import 'expense_category_list_screen.dart';
 import 'expense_form_screen.dart';
 
 class ExpenseListScreen extends ConsumerWidget {
   const ExpenseListScreen({super.key});
+
+  Future<void> _confirmDelete(BuildContext context, WidgetRef ref, Expense expense) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('تأكيد الحذف'),
+        content: Text('هل أنت متأكد من حذف مصروف "${expense.description}"؟\nسيتم أيضاً حذف حركة الصندوق المرتبطة به.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('إلغاء'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('حذف'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await ref.read(expenseRepositoryProvider).deleteExpense(expense.id!);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم حذف المصروف بنجاح')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('خطأ في الحذف: $e'), backgroundColor: Colors.red),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -57,13 +96,23 @@ class ExpenseListScreen extends ConsumerWidget {
                         ),
                       ],
                     ),
-                    trailing: Text(
-                      '${expense.amount.toStringAsFixed(2)} ₪',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        color: Colors.red,
-                      ),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '${expense.amount.toStringAsFixed(2)} ₪',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            color: Colors.red,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.grey),
+                          onPressed: () => _confirmDelete(context, ref, expense),
+                        ),
+                      ],
                     ),
                     onTap: () => Navigator.push(
                       context,

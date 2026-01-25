@@ -42,7 +42,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
+          unselectedLabelColor: Colors.white.withOpacity(0.85),
           tabs: const [
             Tab(icon: Icon(Icons.people), text: 'قائمة العملاء'),
             Tab(icon: Icon(Icons.assessment), text: 'كشف الحساب'),

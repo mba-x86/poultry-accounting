@@ -84,8 +84,6 @@ class _SalesInvoiceFormScreenState extends ConsumerState<SalesInvoiceFormScreen>
                   children: [
                     _buildCustomerSelector(),
                     const SizedBox(height: 16),
-                    _buildCustomerSelector(),
-                    const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -268,11 +266,28 @@ class _SalesInvoiceFormScreenState extends ConsumerState<SalesInvoiceFormScreen>
                         items: products.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
                         onChanged: (val) async {
                           setDialogState(() => selectedProduct = val);
-                          // Fetch daily price for this product
                           if (val != null) {
                             final priceRepo = ref.read(priceRepositoryProvider);
                             final latest = await priceRepo.getLatestPrice(val.id!);
-                            setDialogState(() => priceController.text = (latest?.price ?? val.defaultPrice).toString());
+                            
+                            // NEW: Fetch current stock
+                            final productRepo = ref.read(productRepositoryProvider);
+                            final stock = await productRepo.getCurrentStock(val.id!);
+                            
+                            setDialogState(() {
+                              priceController.text = (latest?.price ?? val.defaultPrice).toString();
+                              qtyController.text = ''; // Reset qty on change
+                            });
+                            
+                            // Show available stock info
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('الكمية المتوفرة من ${val.name}: $stock كغ'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
                           }
                         },
                       );
@@ -295,11 +310,26 @@ class _SalesInvoiceFormScreenState extends ConsumerState<SalesInvoiceFormScreen>
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 if (selectedProduct == null) {
                   return;
                 }
                 final qty = double.tryParse(qtyController.text) ?? 0.0;
+                
+                // NEW: Validate against stock
+                final stock = await ref.read(productRepositoryProvider).getCurrentStock(selectedProduct!.id!);
+                if (qty > stock) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('خطأ: الكمية المطلوبة ($qty) أكبر من المتوفر ($stock)'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                  return;
+                }
+
                 final price = double.tryParse(priceController.text) ?? 0.0;
                 if (qty > 0) {
                   setState(() {
@@ -308,7 +338,7 @@ class _SalesInvoiceFormScreenState extends ConsumerState<SalesInvoiceFormScreen>
                       productName: selectedProduct!.name,
                       quantity: qty,
                       unitPrice: price,
-                      costAtSale: 0, // Should be fetched from inventory manager
+                      costAtSale: 0,
                     ),);
                   });
                   Navigator.pop(context);

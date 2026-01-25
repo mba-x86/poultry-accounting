@@ -120,38 +120,76 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
 
   @override
   Future<int> createExpense(Expense expense) {
-    return database.into(database.expenses).insert(
-          db.ExpensesCompanion.insert(
-            categoryId: expense.categoryId,
-            amount: expense.amount,
-            expenseDate: expense.expenseDate,
-            description: expense.description,
-            notes: Value(expense.notes),
-            createdBy: expense.createdBy ?? 1, // Default user
-          ),
-        );
+    return database.transaction(() async {
+      // 1. Insert expense
+      final id = await database.into(database.expenses).insert(
+            db.ExpensesCompanion.insert(
+              categoryId: expense.categoryId,
+              amount: expense.amount,
+              expenseDate: expense.expenseDate,
+              description: expense.description,
+              notes: Value(expense.notes),
+              createdBy: expense.createdBy ?? 1,
+            ),
+          );
+
+      // 2. Create cash transaction
+      await database.into(database.cashTransactions).insert(
+            db.CashTransactionsCompanion.insert(
+              amount: expense.amount,
+              type: 'out',
+              description: 'مصروف: ${expense.description}',
+              transactionDate: expense.expenseDate,
+              relatedExpenseId: Value(id),
+              createdBy: expense.createdBy ?? 1,
+            ),
+          );
+
+      return id;
+    });
   }
 
   @override
   Future<void> updateExpense(Expense expense) {
-    return (database.update(database.expenses)
-          ..where((t) => t.id.equals(expense.id!)))
-        .write(
-      db.ExpensesCompanion(
-        categoryId: Value(expense.categoryId),
-        amount: Value(expense.amount),
-        expenseDate: Value(expense.expenseDate),
-        description: Value(expense.description),
-        notes: Value(expense.notes),
-      ),
-    );
+    return database.transaction(() async {
+      await (database.update(database.expenses)
+            ..where((t) => t.id.equals(expense.id!)))
+          .write(
+        db.ExpensesCompanion(
+          categoryId: Value(expense.categoryId),
+          amount: Value(expense.amount),
+          expenseDate: Value(expense.expenseDate),
+          description: Value(expense.description),
+          notes: Value(expense.notes),
+        ),
+      );
+
+      // Update associated cash transaction
+      await (database.update(database.cashTransactions)
+            ..where((t) => t.relatedExpenseId.equals(expense.id!)))
+          .write(
+        db.CashTransactionsCompanion(
+          amount: Value(expense.amount),
+          description: Value('مصروف: ${expense.description}'),
+          transactionDate: Value(expense.expenseDate),
+        ),
+      );
+    });
   }
 
   @override
   Future<void> deleteExpense(int id) {
-    return (database.delete(database.expenses)
-          ..where((t) => t.id.equals(id)))
-        .go();
+    return database.transaction(() async {
+      // 1. Delete associated cash transaction
+      await (database.delete(database.cashTransactions)
+            ..where((t) => t.relatedExpenseId.equals(id)))
+          .go();
+
+      // 2. Delete expense
+      await (database.delete(database.expenses)
+            ..where((t) => t.id.equals(id)))
+          .go();
+    });
   }
 
   @override

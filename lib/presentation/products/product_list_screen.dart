@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultry_accounting/core/providers/database_providers.dart';
+import 'package:poultry_accounting/core/constants/app_constants.dart';
 import 'product_form_screen.dart';
 
 class ProductListScreen extends ConsumerWidget {
@@ -10,15 +11,16 @@ class ProductListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('إدارة الأصناف والمنتجات'),
+        title: const Text('إدارة أصناف البيع'),
         backgroundColor: Colors.green,
       ),
       body: ref.watch(productsStreamProvider).when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('خطأ: $err')),
-        data: (products) {
+        data: (allProducts) {
+          final products = allProducts.where((p) => p.productType == ProductType.finalProduct).toList();
           if (products.isEmpty) {
-            return const Center(child: Text('لا توجد أصناف مضافة بعد'));
+            return const Center(child: Text('لا توجد أصناف بيع مضافة بعد'));
           }
 
           return ListView.separated(

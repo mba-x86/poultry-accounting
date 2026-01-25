@@ -66,6 +66,7 @@ class Products extends Table {
   BoolColumn get isWeighted => boolean().withDefault(const Constant(true))();
   RealColumn get defaultPrice => real().withDefault(const Constant(0))();
   TextColumn get description => text().nullable()();
+  TextColumn get productType => text().withDefault(Constant(ProductType.finalProduct.code))(); // raw, intermediate, final
   BoolColumn get isActive => boolean().withDefault(const Constant(true))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -411,7 +412,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -465,6 +466,12 @@ class AppDatabase extends _$AppDatabase {
         await m.createTable(stockConversions);
         await m.createTable(stockConversionItems);
       }
+      if (from < 8) {
+        await m.addColumn(products, (products as dynamic).productType);
+        
+        // Ensure system products exist after migration
+        await _seedSystemProducts();
+      }
     },
   );
 
@@ -508,12 +515,38 @@ class AppDatabase extends _$AppDatabase {
         sharePercentage: const Value(50),
       ),
     );
-    await into(partners).insert(
-      PartnersCompanion.insert(
-        name: 'الشريك الثاني',
-        sharePercentage: const Value(50),
-      ),
-    );
+    
+    await _seedSystemProducts();
+  }
+
+  Future<void> _seedSystemProducts() async {
+    // 1. Live Chicken (Raw Material) - ID 1
+    final liveExist = await (select(products)..where((t) => t.id.equals(AppConstants.liveChickenId))).getSingleOrNull();
+    if (liveExist == null) {
+      await into(products).insert(
+        ProductsCompanion(
+          id: const Value(AppConstants.liveChickenId),
+          name: const Value('دجاج حي (ريش)'),
+          unitType: Value(UnitType.kilogram.code),
+          productType: Value(ProductType.raw.code),
+          isActive: const Value(true),
+        ),
+      );
+    }
+
+    // 2. Whole Slaughtered Chicken (Intermediate) - ID 2
+    final wholeExist = await (select(products)..where((t) => t.id.equals(AppConstants.wholeChickenId))).getSingleOrNull();
+    if (wholeExist == null) {
+      await into(products).insert(
+        ProductsCompanion(
+          id: const Value(AppConstants.wholeChickenId),
+          name: const Value('دجاج مذبوح كامل'),
+          unitType: Value(UnitType.kilogram.code),
+          productType: Value(ProductType.intermediate.code),
+          isActive: const Value(true),
+        ),
+      );
+    }
   }
 }
 

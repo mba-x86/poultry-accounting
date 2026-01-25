@@ -77,12 +77,14 @@ class _CentralDebtRegisterScreenState extends ConsumerState<CentralDebtRegisterS
         appBar: AppBar(
           title: const Text('سجل الديون الموحد'),
           backgroundColor: Colors.blueGrey,
-          bottom: const TabBar(
-            tabs: [
+          bottom: TabBar(
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white.withOpacity(0.85),
+            indicatorColor: Colors.white,
+            tabs: const [
               Tab(text: 'ديون العملاء (لنا)', icon: Icon(Icons.group_outlined)),
               Tab(text: 'ديون الموردين (علينا)', icon: Icon(Icons.local_shipping_outlined)),
             ],
-            indicatorColor: Colors.white,
           ),
         ),
         body: _isLoading

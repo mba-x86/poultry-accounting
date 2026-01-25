@@ -75,15 +75,25 @@ class CustomerRepositoryImpl implements CustomerRepository {
 
   @override
   Future<double> getCustomerBalance(int customerId) async {
-    // Basic implementation: Confirmed Invoices - Paid Amount
-    final query = database.select(database.salesInvoices)
-      ..where((t) => t.customerId.equals(customerId) & t.status.equals('confirmed'));
-    final invoices = await query.get();
-    double balance = 0;
+    // 1. Total from confirmed invoices
+    final invoiceQuery = database.select(database.salesInvoices)
+      ..where((t) => t.customerId.equals(customerId) & t.status.equals('confirmed') & t.deletedAt.isNull());
+    final invoices = await invoiceQuery.get();
+    double totalInvoices = 0;
     for (final inv in invoices) {
-      balance += inv.total - inv.paidAmount;
+      totalInvoices += inv.total;
     }
-    return balance;
+
+    // 2. Total from receipts (payments from customer)
+    final paymentQuery = database.select(database.payments)
+      ..where((t) => t.customerId.equals(customerId) & t.type.equals('receipt') & t.deletedAt.isNull());
+    final payments = await paymentQuery.get();
+    double totalReceipts = 0;
+    for (final p in payments) {
+      totalReceipts += p.amount;
+    }
+
+    return totalInvoices - totalReceipts;
   }
 
   @override

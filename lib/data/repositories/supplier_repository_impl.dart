@@ -72,15 +72,25 @@ class SupplierRepositoryImpl implements SupplierRepository {
 
   @override
   Future<double> getSupplierBalance(int supplierId) async {
-    // Basic implementation: Confirmed Purchase Invoices - Paid Amount
-    final query = database.select(database.purchaseInvoices)
-      ..where((t) => t.supplierId.equals(supplierId) & t.status.equals('confirmed'));
-    final invoices = await query.get();
-    double balance = 0;
+    // 1. Total from confirmed purchase invoices
+    final invoiceQuery = database.select(database.purchaseInvoices)
+      ..where((t) => t.supplierId.equals(supplierId) & t.status.equals('confirmed') & t.deletedAt.isNull());
+    final invoices = await invoiceQuery.get();
+    double totalInvoices = 0;
     for (final inv in invoices) {
-      balance += inv.total - inv.paidAmount;
+      totalInvoices += inv.total;
     }
-    return balance;
+
+    // 2. Total from payments (made to supplier)
+    final paymentQuery = database.select(database.payments)
+      ..where((t) => t.supplierId.equals(supplierId) & t.type.equals('payment') & t.deletedAt.isNull());
+    final payments = await paymentQuery.get();
+    double totalPayments = 0;
+    for (final p in payments) {
+      totalPayments += p.amount;
+    }
+
+    return totalInvoices - totalPayments;
   }
 
   @override
