@@ -412,7 +412,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -471,6 +471,44 @@ class AppDatabase extends _$AppDatabase {
         
         // Ensure system products exist after migration
         await _seedSystemProducts();
+      }
+      if (from < 9) {
+        // Idempotent migration: Check actual database schema
+        final columns = await customSelect('PRAGMA table_info(raw_meat_processings)').get();
+        final existingNames = columns.map((row) => row.read<String>('name')).toList();
+
+        // 1. Handle Orphaned 'gross_weight' column if it exists (remnant from old versions)
+        if (existingNames.contains('gross_weight')) {
+          try {
+            // Attempt to drop the orphaned column (SQLite 3.35.0+)
+            await customStatement('ALTER TABLE raw_meat_processings DROP COLUMN gross_weight');
+          } catch (e) {
+            // Fallback for older SQLite: Recreating table is complex, so we just log or ignore 
+            // if we can't drop it. But on Windows/macOS, DROP COLUMN is usually supported.
+          }
+        }
+
+        // 2. Add missing columns ONLY if they don't exist
+        Future<void> addIfMissing(GeneratedColumn col) async {
+          if (!existingNames.contains(col.name)) {
+            await m.addColumn(rawMeatProcessings, col);
+          }
+        }
+
+        await addIfMissing(rawMeatProcessings.liveGrossWeight);
+        await addIfMissing(rawMeatProcessings.liveCrateWeight);
+        await addIfMissing(rawMeatProcessings.liveCrateCount);
+        await addIfMissing(rawMeatProcessings.liveNetWeight);
+        await addIfMissing(rawMeatProcessings.slaughteredGrossWeight);
+        await addIfMissing(rawMeatProcessings.slaughteredBasketWeight);
+        await addIfMissing(rawMeatProcessings.slaughteredBasketCount);
+        await addIfMissing(rawMeatProcessings.slaughteredNetWeight);
+        await addIfMissing(rawMeatProcessings.totalCost);
+
+        // 3. Data Reconciliation: Sync existing netWeight (legacy) with new slaughteredNetWeight
+        await customStatement(
+          'UPDATE raw_meat_processings SET slaughtered_net_weight = net_weight WHERE (slaughtered_net_weight = 0 OR slaughtered_net_weight IS NULL) AND net_weight > 0',
+        );
       }
     },
   );
