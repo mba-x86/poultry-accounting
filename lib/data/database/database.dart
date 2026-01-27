@@ -103,8 +103,10 @@ class SalesInvoices extends Table {
   RealColumn get total => real().withDefault(const Constant(0))();
   RealColumn get paidAmount => real().withDefault(const Constant(0))();
   TextColumn get notes => text().nullable()();
+  @ReferenceName('salesInvoiceCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get confirmedAt => dateTime().nullable()();
+  @ReferenceName('salesInvoiceConfirmedByUser')
   IntColumn get confirmedBy => integer().nullable().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -140,8 +142,10 @@ class PurchaseInvoices extends Table {
   RealColumn get paidAmount => real().withDefault(const Constant(0))();
   RealColumn get additionalCosts => real().withDefault(const Constant(0))(); // Transport, etc.
   TextColumn get notes => text().nullable()();
+  @ReferenceName('purchaseInvoiceCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get confirmedAt => dateTime().nullable()();
+  @ReferenceName('purchaseInvoiceConfirmedByUser')
   IntColumn get confirmedBy => integer().nullable().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -157,6 +161,7 @@ class StockConversions extends Table {
   RealColumn get sourceQuantity => real()();
   TextColumn get batchNumber => text().nullable()();
   TextColumn get notes => text().nullable()();
+  @ReferenceName('stockConversionCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -198,6 +203,7 @@ class Payments extends Table {
   DateTimeColumn get paymentDate => dateTime()();
   TextColumn get referenceNumber => text().nullable()(); // Check number, transfer ref, etc.
   TextColumn get notes => text().nullable()();
+  @ReferenceName('paymentCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -223,6 +229,7 @@ class Expenses extends Table {
   DateTimeColumn get expenseDate => dateTime()();
   TextColumn get description => text().withLength(max: 200)();
   TextColumn get notes => text().nullable()();
+  @ReferenceName('expenseCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -251,6 +258,7 @@ class Backups extends Table {
   IntColumn get fileSize => integer()(); // in bytes
   BoolColumn get isEncrypted => boolean().withDefault(const Constant(false))();
   TextColumn get notes => text().nullable()();
+  @ReferenceName('backupCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -291,6 +299,7 @@ class RawMeatProcessings extends Table {
   IntColumn get supplierId => integer().nullable().references(Suppliers, #id)();
   DateTimeColumn get processingDate => dateTime()();
   TextColumn get notes => text().nullable()();
+  @ReferenceName('processingCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -333,6 +342,7 @@ class PartnerTransactions extends Table {
   TextColumn get type => text()(); // 'drawing' or 'distribution'
   DateTimeColumn get transactionDate => dateTime()();
   TextColumn get notes => text().nullable()();
+  @ReferenceName('partnerTransactionCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -347,6 +357,7 @@ class CashTransactions extends Table {
   DateTimeColumn get transactionDate => dateTime()();
   IntColumn get relatedPaymentId => integer().nullable().references(Payments, #id)();
   IntColumn get relatedExpenseId => integer().nullable().references(Expenses, #id)();
+  @ReferenceName('cashTransactionCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
@@ -359,6 +370,7 @@ class Salaries extends Table {
   DateTimeColumn get salaryDate => dateTime()();
   TextColumn get employeeName => text().withLength(min: 1, max: 100)();
   TextColumn get notes => text().nullable()();
+  @ReferenceName('salaryCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -372,6 +384,7 @@ class AnnualInventories extends Table {
   RealColumn get amount => real()();
   DateTimeColumn get inventoryDate => dateTime()();
   TextColumn get description => text().withLength(max: 200)();
+  @ReferenceName('annualInventoryCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
   DateTimeColumn get updatedAt => dateTime().nullable()();
@@ -412,7 +425,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 10;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -509,6 +522,41 @@ class AppDatabase extends _$AppDatabase {
         await customStatement(
           'UPDATE raw_meat_processings SET slaughtered_net_weight = net_weight WHERE (slaughtered_net_weight = 0 OR slaughtered_net_weight IS NULL) AND net_weight > 0',
         );
+      }
+      if (from < 10) {
+        // Migration 10: Rebuild raw_meat_processings table to properly remove gross_weight column
+        // This is an idempotent migration that checks if rebuild is needed
+        
+        final columns = await customSelect('PRAGMA table_info(raw_meat_processings)').get();
+        final existingNames = columns.map((row) => row.read<String>('name')).toList();
+        
+        // Only rebuild if the legacy gross_weight column still exists
+        if (existingNames.contains('gross_weight')) {
+          // Step 1: Rename old table
+          await customStatement('ALTER TABLE raw_meat_processings RENAME TO raw_meat_processings_old');
+          
+          // Step 2: Create new table with correct schema using Drift's table definition
+          await m.createTable(rawMeatProcessings);
+          
+          // Step 3: Copy data from old table to new table, mapping old columns to new
+          await customStatement('''
+            INSERT INTO raw_meat_processings (
+              id, batch_number, 
+              live_gross_weight, live_crate_weight, live_crate_count, live_net_weight,
+              slaughtered_gross_weight, slaughtered_basket_weight, slaughtered_basket_count, slaughtered_net_weight,
+              net_weight, total_cost, supplier_id, processing_date, notes, created_by, created_at, updated_at
+            )
+            SELECT 
+              id, batch_number,
+              0.0, 0.0, 0, 0.0,
+              COALESCE(gross_weight, net_weight), 0.0, 0, net_weight,
+              net_weight, COALESCE(total_cost, 0.0), supplier_id, processing_date, notes, created_by, created_at, updated_at
+            FROM raw_meat_processings_old
+          ''');
+          
+          // Step 4: Drop old table
+          await customStatement('DROP TABLE raw_meat_processings_old');
+        }
       }
     },
   );
