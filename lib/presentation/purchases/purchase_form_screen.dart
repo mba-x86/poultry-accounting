@@ -245,7 +245,9 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
         _showAddItemDialog(isLive: true, preSelectedProduct: product);
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -270,7 +272,7 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
     final tareController = TextEditingController(text: '0.0');
     final countController = TextEditingController(text: '0');
 
-    void _calculateNet() {
+    void calculateNet() {
       final gross = double.tryParse(grossController.text) ?? 0;
       final count = double.tryParse(countController.text) ?? 0;
       final tare = double.tryParse(tareController.text) ?? 0;
@@ -296,10 +298,23 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                   if (!snapshot.hasData) {
                     return const LinearProgressIndicator();
                   }
+                  final products = snapshot.data!;
+                  
+                  // Crucial: Ensure the selectedProduct is the exact instance from the list
+                  // or at least matches by ID to avoid Dropdown assertion error
+                  Product? matchingProduct;
+                  if (selectedProduct != null) {
+                    try {
+                      matchingProduct = products.firstWhere((p) => p.id == selectedProduct?.id);
+                    } catch (_) {
+                      // If not found in active list, don't pre-select
+                    }
+                  }
+
                   return DropdownButtonFormField<Product>(
-                    initialValue: selectedProduct,
+                    value: matchingProduct,
                     decoration: const InputDecoration(labelText: 'الصنف'),
-                    items: snapshot.data!.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
+                    items: products.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
                     onChanged: isLive ? null : (val) {
                       setDialogState(() {
                         selectedProduct = val;
@@ -332,7 +347,7 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                             controller: grossController,
                             decoration: const InputDecoration(labelText: 'الوزن القائم', isDense: true),
                             keyboardType: TextInputType.number,
-                            onChanged: (_) => _calculateNet(),
+                            onChanged: (_) => calculateNet(),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -341,7 +356,7 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                             controller: countController,
                             decoration: const InputDecoration(labelText: 'عدد الأقفاص', isDense: true),
                             keyboardType: TextInputType.number,
-                            onChanged: (_) => _calculateNet(),
+                            onChanged: (_) => calculateNet(),
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -350,7 +365,7 @@ class _PurchaseFormScreenState extends ConsumerState<PurchaseFormScreen> {
                             controller: tareController,
                             decoration: const InputDecoration(labelText: 'وزن القفص', isDense: true),
                             keyboardType: TextInputType.number,
-                            onChanged: (_) => _calculateNet(),
+                            onChanged: (_) => calculateNet(),
                           ),
                         ),
                       ],

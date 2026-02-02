@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultry_accounting/core/providers/database_providers.dart';
@@ -41,7 +43,7 @@ class _SupplierManagementScreenState extends ConsumerState<SupplierManagementScr
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white.withOpacity(0.85),
+          unselectedLabelColor: Colors.white.withValues(alpha: 0.85),
           tabs: const [
             Tab(icon: Icon(Icons.business), text: 'قائمة الموردين'),
             Tab(icon: Icon(Icons.assessment), text: 'كشف الحساب'),
@@ -177,7 +179,9 @@ class _SupplierStatementTabState extends ConsumerState<_SupplierStatementTab> {
   List<SupplierStatementEntry> _entries = [];
 
   Future<void> _fetchStatement() async {
-    if (_selectedSupplier == null) return;
+    if (_selectedSupplier == null) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -201,11 +205,19 @@ class _SupplierStatementTabState extends ConsumerState<_SupplierStatementTab> {
   }
 
   List<SupplierStatementEntry> get _filteredEntries {
-    if (_filter == SupplierFilter.all) return _entries;
+    if (_filter == SupplierFilter.all) {
+      return _entries;
+    }
     return _entries.where((e) {
-      if (e.type != 'purchase') return true;
-      if (_filter == SupplierFilter.paid) return e.isPaid;
-      if (_filter == SupplierFilter.unpaid) return !e.isPaid;
+      if (e.type != 'purchase') {
+        return true;
+      }
+      if (_filter == SupplierFilter.paid) {
+        return e.isPaid;
+      }
+      if (_filter == SupplierFilter.unpaid) {
+        return !e.isPaid;
+      }
       return true;
     }).toList();
   }
@@ -266,7 +278,7 @@ class _SupplierStatementTabState extends ConsumerState<_SupplierStatementTab> {
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(10.0),
+        padding: const EdgeInsets.all(10),
         child: Column(
           children: [
             Text(title, style: const TextStyle(fontSize: 10, color: Colors.grey), textAlign: TextAlign.center),
@@ -288,7 +300,7 @@ class _SupplierStatementTabState extends ConsumerState<_SupplierStatementTab> {
         children: [
           ref.watch(suppliersStreamProvider).when(
                 data: (suppliers) => DropdownButtonFormField<Supplier>(
-                  value: _selectedSupplier,
+                  initialValue: _selectedSupplier,
                   decoration: InputDecoration(
                     labelText: 'اختر المورد',
                     border: const OutlineInputBorder(),
@@ -300,11 +312,11 @@ class _SupplierStatementTabState extends ConsumerState<_SupplierStatementTab> {
                       .map((s) => DropdownMenuItem(
                             value: s,
                             child: Text(s.name),
-                          ))
-                      .toList(),
+                          ),
+                        ).toList(),
                   onChanged: (val) {
                     setState(() => _selectedSupplier = val);
-                    _fetchStatement();
+                    unawaited(_fetchStatement());
                   },
                 ),
                 loading: () => const LinearProgressIndicator(),
@@ -334,13 +346,14 @@ class _SupplierStatementTabState extends ConsumerState<_SupplierStatementTab> {
                     );
                     if (date != null) {
                       setState(() => _fromDate = date);
-                      _fetchStatement();
+                      await _fetchStatement();
                     }
                   },
                   icon: const Icon(Icons.date_range, size: 16),
                   label: Text(_fromDate == null
                       ? 'من تاريخ'
-                      : '${_fromDate!.day}/${_fromDate!.month}/${_fromDate!.year}'),
+                      : '${_fromDate!.day}/${_fromDate!.month}/${_fromDate!.year}',
+                    ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -355,13 +368,14 @@ class _SupplierStatementTabState extends ConsumerState<_SupplierStatementTab> {
                     );
                     if (date != null) {
                       setState(() => _toDate = date);
-                      _fetchStatement();
+                      await _fetchStatement();
                     }
                   },
                   icon: const Icon(Icons.date_range, size: 16),
                   label: Text(_toDate == null
                       ? 'إلى تاريخ'
-                      : '${_toDate!.day}/${_toDate!.month}/${_toDate!.year}'),
+                      : '${_toDate!.day}/${_toDate!.month}/${_toDate!.year}',
+                    ),
                 ),
               ),
             ],
@@ -455,7 +469,7 @@ class _SupplierStatementTabState extends ConsumerState<_SupplierStatementTab> {
               ],
             ),
             trailing: Text(
-              '${entry.balance.toStringAsFixed(1)} ₪',
+              '₪ ${entry.balance.toStringAsFixed(1)}',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),

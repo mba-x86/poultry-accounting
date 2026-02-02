@@ -5,12 +5,12 @@ import 'package:poultry_accounting/core/providers/auth_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SessionTimeoutListener extends ConsumerStatefulWidget {
-  final Widget child;
-
   const SessionTimeoutListener({
-    super.key,
     required this.child,
+    super.key,
   });
+
+  final Widget child;
 
   @override
   ConsumerState<SessionTimeoutListener> createState() => _SessionTimeoutListenerState();

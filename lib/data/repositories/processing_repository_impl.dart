@@ -38,6 +38,7 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
           slaughteredNetWeight: Value(processing.slaughteredNetWeight),
           netWeight: processing.netWeight, // Overall summary weight
           totalCost: Value(processing.totalCost),
+          operationalExpenses: Value(processing.operationalExpenses),
           supplierId: Value(processing.supplierId),
           processingDate: processing.processingDate,
           notes: Value(processing.notes),
@@ -49,8 +50,8 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
       for (final output in outputs) {
         totalOutputQty += output.quantity;
       }
-      // Unit cost = total incoming cost / total useful output quantity
-      final outputUnitCost = totalOutputQty > 0 ? (processing.totalCost / totalOutputQty) : 0.0;
+      // Unit cost = (total incoming cost + operational expenses) / total useful output quantity
+      final outputUnitCost = totalOutputQty > 0 ? ((processing.totalCost + processing.operationalExpenses) / totalOutputQty) : 0.0;
 
       for (final output in outputs) {
         await database.into(database.processingOutputs).insert(
@@ -66,18 +67,24 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
           ),
         );
 
-        // Create Inventory Batch for the output
-        await database.into(database.inventoryBatches).insert(
-          db.InventoryBatchesCompanion.insert(
-            productId: output.productId,
-            processingId: Value(id),
-            quantity: output.quantity,
-            remainingQuantity: output.quantity,
-            unitCost: outputUnitCost,
-            purchaseDate: output.inventoryDate ?? processing.processingDate,
-            batchNumber: Value('${processing.batchNumber}-${output.productId}'),
-          ),
-        );
+        // Fetch product type to decide on inventory entry
+        final product = await (database.select(database.products)..where((t) => t.id.equals(output.productId))).getSingleOrNull();
+        final bool isIntermediate = product?.productType == 'intermediate';
+
+        // Create Inventory Batch ONLY for strictly allowed types (Intermediate/Whole)
+        if (isIntermediate) {
+          await database.into(database.inventoryBatches).insert(
+            db.InventoryBatchesCompanion.insert(
+              productId: output.productId,
+              processingId: Value(id),
+              quantity: output.quantity,
+              remainingQuantity: output.quantity,
+              unitCost: outputUnitCost,
+              purchaseDate: output.inventoryDate ?? processing.processingDate,
+              batchNumber: Value('${processing.batchNumber}-${output.productId}'),
+            ),
+          );
+        }
       }
       return id;
     });
@@ -98,6 +105,7 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
           slaughteredNetWeight: Value(processing.slaughteredNetWeight),
           netWeight: Value(processing.netWeight),
           totalCost: Value(processing.totalCost),
+          operationalExpenses: Value(processing.operationalExpenses),
           notes: Value(processing.notes),
           updatedAt: Value(DateTime.now()),
         ),
@@ -111,7 +119,7 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
       for (final output in outputs) {
         totalOutputQty += output.quantity;
       }
-      final outputUnitCost = totalOutputQty > 0 ? (processing.totalCost / totalOutputQty) : 0.0;
+      final outputUnitCost = totalOutputQty > 0 ? ((processing.totalCost + processing.operationalExpenses) / totalOutputQty) : 0.0;
 
       for (final output in outputs) {
         await database.into(database.processingOutputs).insert(
@@ -127,17 +135,23 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
           ),
         );
 
-        await database.into(database.inventoryBatches).insert(
-          db.InventoryBatchesCompanion.insert(
-            productId: output.productId,
-            processingId: Value(processing.id),
-            quantity: output.quantity,
-            remainingQuantity: output.quantity,
-            unitCost: outputUnitCost,
-            purchaseDate: output.inventoryDate ?? processing.processingDate,
-            batchNumber: Value('${processing.batchNumber}-${output.productId}'),
-          ),
-        );
+        // Fetch product type to decide on inventory entry
+        final product = await (database.select(database.products)..where((t) => t.id.equals(output.productId))).getSingleOrNull();
+        final bool isIntermediate = product?.productType == 'intermediate';
+
+        if (isIntermediate) {
+          await database.into(database.inventoryBatches).insert(
+            db.InventoryBatchesCompanion.insert(
+              productId: output.productId,
+              processingId: Value(processing.id),
+              quantity: output.quantity,
+              remainingQuantity: output.quantity,
+              unitCost: outputUnitCost,
+              purchaseDate: output.inventoryDate ?? processing.processingDate,
+              batchNumber: Value('${processing.batchNumber}-${output.productId}'),
+            ),
+          );
+        }
       }
     });
   }
@@ -168,6 +182,7 @@ class ProcessingRepositoryImpl implements IProcessingRepository {
       slaughteredNetWeight: row.slaughteredNetWeight,
       netWeight: row.netWeight,
       totalCost: row.totalCost,
+      operationalExpenses: row.operationalExpenses,
       supplierId: row.supplierId,
       processingDate: row.processingDate,
       notes: row.notes,

@@ -1,0 +1,238 @@
+﻿Analyzing antigravity-poultry-accounting...                     
+
+   info - Constructor declarations should be before non-constructor declarations - lib\core\providers\auth_provider.dart:11:3 - sort_constructors_first
+   info - Constructor declarations should be before non-constructor declarations - lib\core\providers\auth_provider.dart:27:3 - sort_constructors_first
+   info - Sort directive sections alphabetically - lib\core\providers\database_providers.dart:28:1 - directives_ordering
+   info - Sort directive sections alphabetically - lib\core\providers\database_providers.dart:29:1 - directives_ordering
+   info - Sort directive sections alphabetically - lib\core\providers\database_providers.dart:31:1 - directives_ordering
+   info - Sort directive sections alphabetically - lib\core\services\pdf_service.dart:8:1 - directives_ordering
+   info - The value of the argument is redundant because it matches the default value - lib\core\services\pdf_service.dart:43:42 - avoid_redundant_argument_values
+   info - The value of the argument is redundant because it matches the default value - lib\core\services\pdf_service.dart:74:31 - avoid_redundant_argument_values
+   info - Use 'const' with the constructor to improve performance - lib\core\services\pdf_service.dart:101:98 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\core\services\pdf_service.dart:108:44 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\core\services\pdf_service.dart:119:41 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\core\services\pdf_service.dart:126:45 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\core\services\pdf_service.dart:130:46 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\core\services\pdf_service.dart:303:52 - prefer_const_constructors
+   info - Use an 'if' element to conditionally add elements - lib\core\services\pdf_service.dart:319:9 - prefer_if_elements_to_conditional_expressions
+   info - Use an 'if' element to conditionally add elements - lib\core\services\pdf_service.dart:320:9 - prefer_if_elements_to_conditional_expressions
+   info - Missing a required trailing comma - lib\core\services\pdf_service.dart:322:8 - require_trailing_commas
+   info - Constructor declarations should be before non-constructor declarations - lib\core\utils\session_timeout_listener.dart:10:9 - sort_constructors_first
+   info - Required named parameters should be before optional named parameters - lib\core\utils\session_timeout_listener.dart:12:19 - always_put_required_named_parameters_first
+   info - Sort directive sections alphabetically - lib\data\repositories\payment_repository_impl.dart:5:1 - directives_ordering
+   info - Constructor declarations should be before non-constructor declarations - lib\data\repositories\payment_repository_impl.dart:12:3 - sort_constructors_first
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:25:27 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:26:33 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:27:33 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:28:31 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:29:29 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:43:22 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:51:22 - always_put_control_body_on_new_line
+   info - The value of the argument is redundant because it matches the default value - lib\data\repositories\payment_repository_impl.dart:60:41 - avoid_redundant_argument_values
+   info - Missing a required trailing comma - lib\data\repositories\payment_repository_impl.dart:191:5 - require_trailing_commas
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:193:27 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:194:25 - always_put_control_body_on_new_line
+   info - Missing a required trailing comma - lib\data\repositories\payment_repository_impl.dart:208:5 - require_trailing_commas
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:210:27 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:211:25 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\payment_repository_impl.dart:230:27 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:171:27 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:172:25 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:178:27 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:179:25 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:314:27 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:315:25 - always_put_control_body_on_new_line
+   info - Missing a required trailing comma - lib\data\repositories\report_repository_impl.dart:441:8 - require_trailing_commas
+   info - Missing a required trailing comma - lib\data\repositories\report_repository_impl.dart:456:8 - require_trailing_commas
+   info - Missing a required trailing comma - lib\data\repositories\report_repository_impl.dart:492:8 - require_trailing_commas
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:499:27 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:500:25 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:507:27 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:508:25 - always_put_control_body_on_new_line
+   info - Missing a required trailing comma - lib\data\repositories\report_repository_impl.dart:542:10 - require_trailing_commas
+   info - Missing a required trailing comma - lib\data\repositories\report_repository_impl.dart:552:10 - require_trailing_commas
+   info - Missing a required trailing comma - lib\data\repositories\report_repository_impl.dart:590:8 - require_trailing_commas
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:597:27 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:598:25 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:605:27 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\data\repositories\report_repository_impl.dart:606:25 - always_put_control_body_on_new_line
+   info - The value of the argument is redundant because it matches the default value - lib\data\repositories\report_repository_impl.dart:629:17 - avoid_redundant_argument_values
+   info - Missing a required trailing comma - lib\data\repositories\report_repository_impl.dart:630:10 - require_trailing_commas
+   info - Missing a required trailing comma - lib\data\repositories\report_repository_impl.dart:641:10 - require_trailing_commas
+   info - Local variables should be final - lib\data\repositories\report_repository_impl.dart:689:5 - prefer_final_locals
+   info - Sort directive sections alphabetically - lib\data\repositories\repositories.dart:13:1 - directives_ordering
+   info - Statement should be on a separate line - lib\data\repositories\stock_conversion_repository_impl.dart:60:37 - always_put_control_body_on_new_line
+   info - Use 'const' with the constructor to improve performance - lib\data\repositories\stock_conversion_repository_impl.dart:76:13 - prefer_const_constructors
+   info - Unnecessary use of parentheses - lib\data\repositories\stock_conversion_repository_impl.dart:83:28 - unnecessary_parenthesis
+warning - The value of the local variable 'averageSourceUnitCost' isn't used - lib\data\repositories\stock_conversion_repository_impl.dart:92:13 - unused_local_variable
+   info - Local variables should be final - lib\data\repositories\stock_conversion_repository_impl.dart:101:7 - prefer_final_locals
+   info - Local variables should be final - lib\data\repositories\stock_conversion_repository_impl.dart:117:9 - prefer_final_locals
+   info - Unnecessary 'this.' qualifier - lib\domain\entities\product.dart:70:35 - unnecessary_this
+warning - The left operand can't be null, so the right operand is never executed - lib\domain\entities\product.dart:70:35 - dead_null_aware_expression
+   info - Required named parameters should be before optional named parameters - lib\domain\entities\stock_conversion.dart:6:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters - lib\domain\entities\stock_conversion.dart:7:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters - lib\domain\entities\stock_conversion.dart:8:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters - lib\domain\entities\stock_conversion.dart:11:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters - lib\domain\entities\stock_conversion.dart:40:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters - lib\domain\entities\stock_conversion.dart:41:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters - lib\domain\entities\stock_conversion.dart:42:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters - lib\domain\entities\stock_conversion.dart:43:19 - always_put_required_named_parameters_first
+   info - Required named parameters should be before optional named parameters - lib\domain\entities\stock_conversion.dart:44:19 - always_put_required_named_parameters_first
+   info - Sort directive sections alphabetically - lib\main.dart:8:1 - directives_ordering
+   info - Unnecessary 'const' keyword - lib\main.dart:90:13 - unnecessary_const
+   info - Unnecessary 'const' keyword - lib\main.dart:97:13 - unnecessary_const
+   info - Unnecessary 'const' keyword - lib\main.dart:98:13 - unnecessary_const
+   info - Unnecessary 'const' keyword - lib\main.dart:105:13 - unnecessary_const
+   info - Unnecessary 'const' keyword - lib\main.dart:106:13 - unnecessary_const
+   info - Unnecessary 'const' keyword - lib\main.dart:107:13 - unnecessary_const
+   info - Unnecessary 'const' keyword - lib\main.dart:108:13 - unnecessary_const
+   info - Sort directive sections alphabetically - lib\presentation\admin\settings_screen.dart:6:1 - directives_ordering
+warning - Unused import: 'package:poultry_accounting/core/utils/security_utils.dart' - lib\presentation\admin\settings_screen.dart:7:8 - unused_import
+   info - Sort directive sections alphabetically - lib\presentation\admin\settings_screen.dart:8:1 - directives_ordering
+warning - The value of the field '_otpController' isn't used - lib\presentation\admin\settings_screen.dart:29:9 - unused_field
+   info - Statement should be on a separate line - lib\presentation\admin\settings_screen.dart:206:23 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\auth\login_screen.dart:46:45 - always_put_control_body_on_new_line
+   info - Don't use 'BuildContext's across async gaps - lib\presentation\auth\login_screen.dart:61:20 - use_build_context_synchronously
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\presentation\auth\login_screen.dart:61:29 - unawaited_futures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\auth\login_screen.dart:92:37 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\auth\login_screen.dart:96:41 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\customers\customer_management_screen.dart:45:46 - deprecated_member_use
+   info - Statement should be on a separate line - lib\presentation\customers\customer_management_screen.dart:180:36 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\customers\customer_management_screen.dart:204:56 - always_put_control_body_on_new_line
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\customers\customer_management_screen.dart:281:19 - deprecated_member_use
+   info - Missing a required trailing comma - lib\presentation\customers\customer_management_screen.dart:293:28 - require_trailing_commas
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\presentation\customers\customer_management_screen.dart:317:23 - unawaited_futures
+   info - Missing a required trailing comma - lib\presentation\customers\customer_management_screen.dart:323:83 - require_trailing_commas
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\presentation\customers\customer_management_screen.dart:338:23 - unawaited_futures
+   info - Missing a required trailing comma - lib\presentation\customers\customer_management_screen.dart:344:77 - require_trailing_commas
+   info - Use an if-null operator to convert a 'null' to a 'bool' - lib\presentation\expenses\expense_form_screen.dart:108:9 - use_if_null_to_convert_nulls_to_bools
+   info - Use an if-null operator to convert a 'null' to a 'bool' - lib\presentation\expenses\expense_list_screen.dart:32:9 - use_if_null_to_convert_nulls_to_bools
+   info - Sort directive sections alphabetically - lib\presentation\home\home_screen.dart:7:1 - directives_ordering
+   info - Sort directive sections alphabetically - lib\presentation\home\home_screen.dart:8:1 - directives_ordering
+warning - Unused import: 'package:poultry_accounting/presentation/payments/payment_list_screen.dart' - lib\presentation\home\home_screen.dart:11:8 - unused_import
+   info - Sort directive sections alphabetically - lib\presentation\home\home_screen.dart:17:1 - directives_ordering
+warning - Duplicate import - lib\presentation\home\home_screen.dart:17:8 - duplicate_import
+warning - Unused import: 'package:poultry_accounting/presentation/pricing/live_chicken_pricing_screen.dart' - lib\presentation\home\home_screen.dart:18:8 - unused_import
+   info - Sort directive sections alphabetically - lib\presentation\home\home_screen.dart:22:1 - directives_ordering
+   info - Sort directive sections alphabetically - lib\presentation\home\home_screen.dart:25:1 - directives_ordering
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\home\home_screen.dart:62:43 - deprecated_member_use
+   info - Unnecessary use of a 'double' literal - lib\presentation\home\home_screen.dart:66:51 - prefer_int_literals
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\home\home_screen.dart:88:49 - deprecated_member_use
+   info - Missing a required trailing comma - lib\presentation\home\home_screen.dart:111:40 - require_trailing_commas
+   info - Missing a required trailing comma - lib\presentation\home\home_screen.dart:117:42 - require_trailing_commas
+   info - Missing a required trailing comma - lib\presentation\home\home_screen.dart:123:41 - require_trailing_commas
+   info - Unnecessary use of a 'double' literal - lib\presentation\home\home_screen.dart:219:45 - prefer_int_literals
+   info - Sort directive sections alphabetically - lib\presentation\payments\payment_form_screen.dart:6:1 - directives_ordering
+warning - Unused import: 'package:poultry_accounting/domain/entities/customer.dart' - lib\presentation\payments\payment_form_screen.dart:6:8 - unused_import
+warning - Unused import: 'package:poultry_accounting/domain/entities/supplier.dart' - lib\presentation\payments\payment_form_screen.dart:7:8 - unused_import
+   info - Constructor declarations should be before non-constructor declarations - lib\presentation\payments\payment_form_screen.dart:13:9 - sort_constructors_first
+   info - Statement should be on a separate line - lib\presentation\payments\payment_form_screen.dart:99:45 - always_put_control_body_on_new_line
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\presentation\payments\payment_form_screen.dart:177:23 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\presentation\payments\payment_form_screen.dart:178:23 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\presentation\payments\payment_form_screen.dart:195:23 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\presentation\payments\payment_form_screen.dart:196:23 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\payments\payment_form_screen.dart:219:21 - deprecated_member_use
+   info - Missing a required trailing comma - lib\presentation\payments\payment_form_screen.dart:228:22 - require_trailing_commas
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\payments\payment_form_screen.dart:243:21 - deprecated_member_use
+   info - Missing a required trailing comma - lib\presentation\payments\payment_form_screen.dart:252:22 - require_trailing_commas
+   info - Statement should be on a separate line - lib\presentation\payments\payment_form_screen.dart:304:51 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\payments\payment_form_screen.dart:305:79 - always_put_control_body_on_new_line
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\payments\payment_form_screen.dart:315:17 - deprecated_member_use
+   info - Missing a required trailing comma - lib\presentation\payments\payment_form_screen.dart:322:18 - require_trailing_commas
+   info - Statement should be on a separate line - lib\presentation\payments\payment_form_screen.dart:324:36 - always_put_control_body_on_new_line
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\pricing\daily_pricing_screen.dart:95:55 - deprecated_member_use
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\presentation\pricing\live_chicken_pricing_screen.dart:36:7 - unawaited_futures
+   info - Statement should be on a separate line - lib\presentation\pricing\live_chicken_pricing_screen.dart:41:36 - always_put_control_body_on_new_line
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\pricing\live_chicken_pricing_screen.dart:84:41 - deprecated_member_use
+   info - Sort directive sections alphabetically - lib\presentation\processing\raw_meat_processing_screen.dart:4:1 - directives_ordering
+warning - The value of the field '_formKey' isn't used - lib\presentation\processing\raw_meat_processing_screen.dart:17:9 - unused_field
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\processing\raw_meat_processing_screen.dart:305:22 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\processing\raw_meat_processing_screen.dart:404:19 - deprecated_member_use
+   info - Missing a required trailing comma - lib\presentation\processing\raw_meat_processing_screen.dart:446:22 - require_trailing_commas
+   info - Missing a required trailing comma - lib\presentation\processing\raw_meat_processing_screen.dart:555:24 - require_trailing_commas
+   info - Use an if-null operator to convert a 'null' to a 'bool' - lib\presentation\processing\raw_meat_processing_screen.dart:588:11 - use_if_null_to_convert_nulls_to_bools
+   info - Missing a required trailing comma - lib\presentation\processing\raw_meat_processing_screen.dart:621:10 - require_trailing_commas
+   info - Statement should be on a separate line - lib\presentation\processing\raw_meat_processing_screen.dart:629:20 - always_put_control_body_on_new_line
+   info - Missing a required trailing comma - lib\presentation\processing\raw_meat_processing_screen.dart:644:6 - require_trailing_commas
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\processing\stock_conversion_screen.dart:104:19 - deprecated_member_use
+   info - Statement should be on a separate line - lib\presentation\processing\stock_conversion_screen.dart:128:49 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\processing\stock_conversion_screen.dart:130:42 - always_put_control_body_on_new_line
+   info - Missing a required trailing comma - lib\presentation\processing\stock_conversion_screen.dart:205:97 - require_trailing_commas
+   info - Missing a required trailing comma - lib\presentation\processing\stock_conversion_screen.dart:223:12 - require_trailing_commas
+   info - Missing a required trailing comma - lib\presentation\processing\stock_conversion_screen.dart:281:20 - require_trailing_commas
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\processing\stock_conversion_screen.dart:311:19 - deprecated_member_use
+   info - Statement should be on a separate line - lib\presentation\processing\stock_conversion_screen.dart:334:45 - always_put_control_body_on_new_line
+warning - The value of the local variable 'invoiceItems' isn't used - lib\presentation\processing\stock_conversion_screen.dart:362:13 - unused_local_variable
+   info - The variable 'output' should be final - lib\presentation\processing\stock_conversion_screen.dart:381:16 - prefer_final_in_for_each
+   info - Missing a required trailing comma - lib\presentation\processing\stock_conversion_screen.dart:390:10 - require_trailing_commas
+   info - The value of the argument is redundant because it matches the default value - lib\presentation\processing\stock_conversion_screen.dart:402:19 - avoid_redundant_argument_values
+   info - The value of the argument is redundant because it matches the default value - lib\presentation\processing\stock_conversion_screen.dart:403:14 - avoid_redundant_argument_values
+   info - The value of the argument is redundant because it matches the default value - lib\presentation\processing\stock_conversion_screen.dart:404:21 - avoid_redundant_argument_values
+   info - Missing a required trailing comma - lib\presentation\processing\stock_conversion_screen.dart:414:10 - require_trailing_commas
+   info - Statement should be on a separate line - lib\presentation\processing\stock_conversion_screen.dart:422:20 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\processing\stock_conversion_screen.dart:427:45 - always_put_control_body_on_new_line
+   info - Missing a required trailing comma - lib\presentation\processing\stock_conversion_screen.dart:458:10 - require_trailing_commas
+   info - Statement should be on a separate line - lib\presentation\processing\stock_conversion_screen.dart:466:20 - always_put_control_body_on_new_line
+   info - Sort directive sections alphabetically - lib\presentation\products\product_list_screen.dart:4:1 - directives_ordering
+   info - Statement should be on a separate line - lib\presentation\purchases\purchase_form_screen.dart:248:20 - always_put_control_body_on_new_line
+   info - The local variable '_calculateNet' starts with an underscore - lib\presentation\purchases\purchase_form_screen.dart:273:10 - no_leading_underscores_for_local_identifiers
+   info - Local variables should be final - lib\presentation\reports\central_debt_register_screen.dart:55:5 - prefer_final_locals
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\reports\central_debt_register_screen.dart:82:48 - deprecated_member_use
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\presentation\reports\central_debt_register_screen.dart:108:20 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance - lib\presentation\reports\central_debt_register_screen.dart:108:21 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\presentation\reports\central_debt_register_screen.dart:108:78 - prefer_const_constructors
+   info - Statement should be on a separate line - lib\presentation\reports\central_debt_register_screen.dart:136:33 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\reports\central_debt_register_screen.dart:156:33 - always_put_control_body_on_new_line
+   info - Constructor declarations should be before non-constructor declarations - lib\presentation\reports\customer_statement_screen.dart:13:9 - sort_constructors_first
+   info - Statement should be on a separate line - lib\presentation\reports\customer_statement_screen.dart:36:36 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\reports\customer_statement_screen.dart:60:56 - always_put_control_body_on_new_line
+   info - Closure should be a tearoff - lib\presentation\reports\customer_statement_screen.dart:101:26 - unnecessary_lambdas
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\reports\customer_statement_screen.dart:128:19 - deprecated_member_use
+   info - Missing a required trailing comma - lib\presentation\reports\customer_statement_screen.dart:137:28 - require_trailing_commas
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\presentation\reports\customer_statement_screen.dart:161:23 - unawaited_futures
+   info - Missing a required trailing comma - lib\presentation\reports\customer_statement_screen.dart:167:83 - require_trailing_commas
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\presentation\reports\customer_statement_screen.dart:182:23 - unawaited_futures
+   info - Missing a required trailing comma - lib\presentation\reports\customer_statement_screen.dart:188:77 - require_trailing_commas
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\reports\reports_screen.dart:39:46 - deprecated_member_use
+   info - Missing a required trailing comma - lib\presentation\reports\reports_screen.dart:184:24 - require_trailing_commas
+   info - Constructor declarations should be before non-constructor declarations - lib\presentation\reports\supplier_statement_screen.dart:11:9 - sort_constructors_first
+   info - Statement should be on a separate line - lib\presentation\reports\supplier_statement_screen.dart:35:36 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\reports\supplier_statement_screen.dart:59:40 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\reports\supplier_statement_screen.dart:61:33 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\reports\supplier_statement_screen.dart:65:43 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\reports\supplier_statement_screen.dart:66:45 - always_put_control_body_on_new_line
+   info - Unnecessary use of a 'double' literal - lib\presentation\reports\supplier_statement_screen.dart:118:39 - prefer_int_literals
+   info - Unnecessary use of string interpolation - lib\presentation\reports\supplier_statement_screen.dart:123:15 - unnecessary_string_interpolations
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\reports\supplier_statement_screen.dart:139:19 - deprecated_member_use
+   info - Missing a required trailing comma - lib\presentation\reports\supplier_statement_screen.dart:148:28 - require_trailing_commas
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\presentation\reports\supplier_statement_screen.dart:182:23 - unawaited_futures
+   info - Missing a required trailing comma - lib\presentation\reports\supplier_statement_screen.dart:188:83 - require_trailing_commas
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\presentation\reports\supplier_statement_screen.dart:203:23 - unawaited_futures
+   info - Missing a required trailing comma - lib\presentation\reports\supplier_statement_screen.dart:209:77 - require_trailing_commas
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\sales\sales_invoice_form_screen.dart:284:52 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\sales\sales_invoice_form_screen.dart:323:42 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\presentation\sales\sales_invoice_form_screen.dart:344:33 - use_build_context_synchronously
+   info - Sort directive sections alphabetically - lib\presentation\sales\sales_management_screen.dart:5:1 - directives_ordering
+   info - Sort directive sections alphabetically - lib\presentation\sales\sales_management_screen.dart:6:1 - directives_ordering
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\sales\sales_management_screen.dart:47:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\presentation\suppliers\supplier_management_screen.dart:44:46 - deprecated_member_use
+   info - Statement should be on a separate line - lib\presentation\suppliers\supplier_management_screen.dart:180:36 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\suppliers\supplier_management_screen.dart:204:40 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\suppliers\supplier_management_screen.dart:206:33 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\suppliers\supplier_management_screen.dart:207:43 - always_put_control_body_on_new_line
+   info - Statement should be on a separate line - lib\presentation\suppliers\supplier_management_screen.dart:208:45 - always_put_control_body_on_new_line
+   info - Unnecessary use of a 'double' literal - lib\presentation\suppliers\supplier_management_screen.dart:269:39 - prefer_int_literals
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\presentation\suppliers\supplier_management_screen.dart:291:19 - deprecated_member_use
+   info - Missing a required trailing comma - lib\presentation\suppliers\supplier_management_screen.dart:303:28 - require_trailing_commas
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\presentation\suppliers\supplier_management_screen.dart:337:23 - unawaited_futures
+   info - Missing a required trailing comma - lib\presentation\suppliers\supplier_management_screen.dart:343:83 - require_trailing_commas
+   info - Missing an 'await' for the 'Future' computed by this expression - lib\presentation\suppliers\supplier_management_screen.dart:358:23 - unawaited_futures
+   info - Missing a required trailing comma - lib\presentation\suppliers\supplier_management_screen.dart:364:77 - require_trailing_commas
+
+flutter : 228 issues found. (ran in 3.7s)
+At line:1 char:1
++ flutter analyze 2>&1 | Out-File -FilePath analysis_current.txt -Encod ...
++ ~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (228 issues found. (ran in 3.7s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

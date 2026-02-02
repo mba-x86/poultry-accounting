@@ -42,7 +42,7 @@ class _CustomerManagementScreenState extends ConsumerState<CustomerManagementScr
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white.withOpacity(0.85),
+          unselectedLabelColor: Colors.white.withValues(alpha: 0.85),
           tabs: const [
             Tab(icon: Icon(Icons.people), text: 'قائمة العملاء'),
             Tab(icon: Icon(Icons.assessment), text: 'كشف الحساب'),
@@ -177,7 +177,9 @@ class _CustomerStatementTabState extends ConsumerState<_CustomerStatementTab> {
   List<CustomerStatementEntry> _entries = [];
 
   Future<void> _fetchStatement() async {
-    if (_selectedCustomer == null) return;
+    if (_selectedCustomer == null) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -201,7 +203,9 @@ class _CustomerStatementTabState extends ConsumerState<_CustomerStatementTab> {
   }
 
   Future<void> _exportToPdf() async {
-    if (_selectedCustomer == null || _entries.isEmpty) return;
+    if (_selectedCustomer == null || _entries.isEmpty) {
+      return;
+    }
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -278,7 +282,7 @@ class _CustomerStatementTabState extends ConsumerState<_CustomerStatementTab> {
         children: [
           ref.watch(customersStreamProvider).when(
                 data: (customers) => DropdownButtonFormField<Customer>(
-                  value: _selectedCustomer,
+                  initialValue: _selectedCustomer,
                   decoration: InputDecoration(
                     labelText: 'اختر العميل',
                     border: const OutlineInputBorder(),
@@ -290,7 +294,7 @@ class _CustomerStatementTabState extends ConsumerState<_CustomerStatementTab> {
                       .map((c) => DropdownMenuItem(
                             value: c,
                             child: Text(c.name),
-                          ))
+                          ),)
                       .toList(),
                   onChanged: (val) {
                     setState(() => _selectedCustomer = val);
@@ -314,13 +318,15 @@ class _CustomerStatementTabState extends ConsumerState<_CustomerStatementTab> {
                     );
                     if (date != null) {
                       setState(() => _fromDate = date);
-                      _fetchStatement();
+                      await _fetchStatement();
                     }
                   },
                   icon: const Icon(Icons.date_range),
-                  label: Text(_fromDate == null
-                      ? 'من تاريخ'
-                      : '${_fromDate!.day}/${_fromDate!.month}/${_fromDate!.year}'),
+                  label: Text(
+                    _fromDate == null
+                        ? 'من تاريخ'
+                        : '${_fromDate!.day}/${_fromDate!.month}/${_fromDate!.year}',
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -335,13 +341,15 @@ class _CustomerStatementTabState extends ConsumerState<_CustomerStatementTab> {
                     );
                     if (date != null) {
                       setState(() => _toDate = date);
-                      _fetchStatement();
+                      await _fetchStatement();
                     }
                   },
                   icon: const Icon(Icons.date_range),
-                  label: Text(_toDate == null
-                      ? 'إلى تاريخ'
-                      : '${_toDate!.day}/${_toDate!.month}/${_toDate!.year}'),
+                  label: Text(
+                    _toDate == null
+                        ? 'إلى تاريخ'
+                        : '${_toDate!.day}/${_toDate!.month}/${_toDate!.year}',
+                  ),
                 ),
               ),
             ],

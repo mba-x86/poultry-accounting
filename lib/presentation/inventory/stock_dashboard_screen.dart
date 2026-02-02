@@ -112,8 +112,21 @@ class StockDashboardScreen extends ConsumerWidget {
     final repo = ref.read(productRepositoryProvider);
     final products = await repo.getInventoryProducts();
     final List<Product> result = [];
+    
     for (final p in products) {
+      // Filter: Only show Raw (Live) and Intermediate (Whole) products
+      // This hides Cuts (final products) from the main inventory clutter
+      if (p.productType != ProductType.raw && p.productType != ProductType.intermediate) {
+        continue;
+      }
+
       final withStock = await repo.getProductWithStock(p.id!);
+      
+      // Also hide if zero stock AND not the primary focus (Whole Chicken)
+      if (withStock.currentStock <= 0 && p.productType != ProductType.intermediate) {
+        continue;
+      }
+
       result.add(withStock);
     }
     return result;

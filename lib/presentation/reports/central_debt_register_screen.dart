@@ -52,7 +52,7 @@ class _CentralDebtRegisterScreenState extends ConsumerState<CentralDebtRegisterS
     final supplierRepo = ref.read(supplierRepositoryProvider);
     final allSuppliers = await supplierRepo.getAllSuppliers();
     
-    List<Map<String, dynamic>> balances = [];
+    final List<Map<String, dynamic>> balances = [];
     for (final s in allSuppliers) {
       final statement = await reportRepo.getSupplierStatement(s.id!);
       if (statement.isNotEmpty && statement.last.balance > 0.1) {
@@ -79,7 +79,7 @@ class _CentralDebtRegisterScreenState extends ConsumerState<CentralDebtRegisterS
           backgroundColor: Colors.blueGrey,
           bottom: TabBar(
             labelColor: Colors.white,
-            unselectedLabelColor: Colors.white.withOpacity(0.85),
+            unselectedLabelColor: Colors.white.withValues(alpha: 0.85),
             indicatorColor: Colors.white,
             tabs: const [
               Tab(text: 'ديون العملاء (لنا)', icon: Icon(Icons.group_outlined)),
@@ -105,7 +105,13 @@ class _CentralDebtRegisterScreenState extends ConsumerState<CentralDebtRegisterS
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.blueGrey.shade900,
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, -2))],
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26,
+            blurRadius: 10,
+            offset: Offset(0, -2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -133,7 +139,9 @@ class _CentralDebtRegisterScreenState extends ConsumerState<CentralDebtRegisterS
   }
 
   Widget _buildCustomerDebtsTab() {
-    if (_customerDebts.isEmpty) return const Center(child: Text('لا توجد ديون عملاء حالياً'));
+    if (_customerDebts.isEmpty) {
+      return const Center(child: Text('لا توجد ديون عملاء حالياً'));
+    }
     return ListView.separated(
       padding: const EdgeInsets.all(8),
       itemCount: _customerDebts.length,
@@ -153,7 +161,9 @@ class _CentralDebtRegisterScreenState extends ConsumerState<CentralDebtRegisterS
   }
 
   Widget _buildSupplierDebtsTab() {
-    if (_supplierDebts.isEmpty) return const Center(child: Text('لا توجد مديونية لموردين حالياً'));
+    if (_supplierDebts.isEmpty) {
+      return const Center(child: Text('لا توجد مديونية لموردين حالياً'));
+    }
     return ListView.separated(
       padding: const EdgeInsets.all(8),
       itemCount: _supplierDebts.length,

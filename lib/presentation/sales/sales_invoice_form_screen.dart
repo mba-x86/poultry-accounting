@@ -280,7 +280,7 @@ class _SalesInvoiceFormScreenState extends ConsumerState<SalesInvoiceFormScreen>
                             });
                             
                             // Show available stock info
-                            if (mounted) {
+                            if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('الكمية المتوفرة من ${val.name}: $stock كغ'),
@@ -319,7 +319,7 @@ class _SalesInvoiceFormScreenState extends ConsumerState<SalesInvoiceFormScreen>
                 // NEW: Validate against stock
                 final stock = await ref.read(productRepositoryProvider).getCurrentStock(selectedProduct!.id!);
                 if (qty > stock) {
-                  if (mounted) {
+                  if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text('خطأ: الكمية المطلوبة ($qty) أكبر من المتوفر ($stock)'),
@@ -341,7 +341,9 @@ class _SalesInvoiceFormScreenState extends ConsumerState<SalesInvoiceFormScreen>
                       costAtSale: 0,
                     ),);
                   });
-                  Navigator.pop(context);
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                  }
                 }
               },
               child: const Text('إضافة'),

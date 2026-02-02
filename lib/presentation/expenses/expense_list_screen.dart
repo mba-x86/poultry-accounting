@@ -29,7 +29,7 @@ class ExpenseListScreen extends ConsumerWidget {
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed ?? false) {
       try {
         await ref.read(expenseRepositoryProvider).deleteExpense(expense.id!);
         if (context.mounted) {

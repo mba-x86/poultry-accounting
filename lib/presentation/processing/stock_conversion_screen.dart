@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultry_accounting/core/constants/app_constants.dart';
 import 'package:poultry_accounting/core/providers/database_providers.dart';
 import 'package:poultry_accounting/domain/entities/customer.dart';
+import 'package:poultry_accounting/domain/entities/expense.dart';
 import 'package:poultry_accounting/domain/entities/invoice.dart';
 import 'package:poultry_accounting/domain/entities/product.dart';
 import 'package:poultry_accounting/domain/entities/stock_conversion.dart';
@@ -40,7 +41,7 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
 
   double get _totalSourceQuantity => double.tryParse(_sourceQuantityController.text) ?? 0;
   
-  double get _totalOutputQuantity => _outputs.fold(0, (sum, item) => sum + item.quantity);
+  double get _totalOutputQuantity => _outputs.fold(0.0, (sum, item) => sum + item.quantity);
   
   double get _processingLoss => (_totalSourceQuantity - _totalOutputQuantity).clamp(0, double.infinity);
 
@@ -101,7 +102,7 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
                 final listToShow = products.where((p) => p.productType == ProductType.intermediate).toList();
 
                 return DropdownButtonFormField<Product>(
-                  value: _sourceProduct ?? (listToShow.isNotEmpty ? listToShow.first : null),
+                  initialValue: _sourceProduct ?? (listToShow.isNotEmpty ? listToShow.first : null),
                   decoration: const InputDecoration(
                     labelText: 'المنتج المصدر (دجاج كامل)',
                     border: OutlineInputBorder(),
@@ -125,9 +126,13 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
               ),
               keyboardType: TextInputType.number,
               validator: (val) {
-                if (val == null || val.isEmpty) return 'مطلوب';
+                if (val == null || val.isEmpty) {
+                  return 'مطلوب';
+                }
                 final v = double.tryParse(val);
-                if (v == null || v <= 0) return 'قيمة غير صالحة';
+                if (v == null || v <= 0) {
+                  return 'قيمة غير صالحة';
+                }
                 return null;
               },
               onChanged: (_) => setState(() {}),
@@ -202,7 +207,8 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
             const Divider(),
             _summaryRow('إجمالي النواتج:', '${_totalOutputQuantity.toStringAsFixed(2)} كغ', isBold: true),
             _summaryRow('الفاقد (هدر/عظم):', '${_processingLoss.toStringAsFixed(2)} كغ', 
-              color: _processingLoss > (_totalSourceQuantity * 0.3) ? Colors.red : Colors.orange), // Warn if > 30% loss
+              color: _processingLoss > (_totalSourceQuantity * 0.3) ? Colors.red : Colors.orange,
+            ), // Warn if > 30% loss
           ],
         ),
       ),
@@ -220,7 +226,7 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
             fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
             color: color ?? Colors.black,
             fontSize: isBold ? 16 : 14,
-          )),
+          ),),
         ],
       ),
     );
@@ -277,8 +283,9 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
                     productId: selectedProduct!.id!, 
                     quantity: qty, 
                     yieldPercentage: yieldPct, 
-                    unitCost: 0, // Calculated in repo
-                  ));
+                    unitCost: 0,
+                  ),
+                  );
                 });
                 Navigator.pop(context);
               }
@@ -308,7 +315,7 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
               const Divider(),
               ref.watch(customersStreamProvider).when(
                 data: (customers) => DropdownButtonFormField<Customer>(
-                  value: _selectedCustomer,
+                  initialValue: _selectedCustomer,
                   decoration: const InputDecoration(
                     labelText: 'اختر العميل',
                     prefixIcon: Icon(Icons.person),
@@ -331,7 +338,9 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
   }
 
   Future<void> _saveAndTransfer() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
     if (_outputs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يجب إضافة صنف واحد على الأقل')));
       return;
@@ -353,41 +362,32 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
         createdBy: 1,
       );
 
-      final conversionId = await ref.read(stockConversionRepositoryProvider).convertStock(
+      // forceInventory: false ensures ONLY intermediate (Whole Chicken) goes to stock
+      // if it's a transfer, we probably don't even want the Whole Chicken record in stock batches?
+      // Actually, convertStock REDUCES the source batch. The output is what we guard.
+      final processedItems = await ref.read(stockConversionRepositoryProvider).convertStock(
         conversion: conversion,
         items: _outputs,
+        forceInventory: false,
       );
 
       // 2. Create Sales Invoice
-      final invoiceItems = _outputs.map((output) {
-         // Using safe default price lookup if possible or 0, user can edit later if needed, 
-         // but ideally we fetch prices. For MVP, we might set price to 0 or try to fetch.
-         // Since this is sync, let's look up price from products list if available in scope 
-         // or mostly importantly just create the item.
-         return InvoiceItem(
-           productId: output.productId, 
-           productName: 'Generated', // Should be fetched, simplified here
-           quantity: output.quantity, 
-           unitPrice: 0, // Needs pricing logic
-           costAtSale: 0,
-         );
-      }).toList();
-
-      // We need product names and prices.
       final products = await ref.read(productsStreamProvider.future);
       final priceRepo = ref.read(priceRepositoryProvider);
       
       final enrichedItems = <InvoiceItem>[];
-      for (var output in _outputs) {
-        final product = products.firstWhere((p) => p.id == output.productId);
+      for (final processed in processedItems) {
+        final product = products.firstWhere((p) => p.id == processed.productId);
         final priceObj = await priceRepo.getLatestPrice(product.id!);
+        
         enrichedItems.add(InvoiceItem(
            productId: product.id!,
            productName: product.name,
-           quantity: output.quantity,
+           quantity: processed.quantity,
            unitPrice: priceObj?.price ?? product.defaultPrice,
-           costAtSale: 0, // Logic handles it
-        ));
+           costAtSale: processed.unitCost, // Using the calculated cost from conversion!
+        ),
+        );
       }
 
       final invoiceRepo = ref.read(invoiceRepositoryProvider);
@@ -397,21 +397,19 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
         invoiceNumber: invNum,
         customerId: _selectedCustomer!.id!,
         invoiceDate: DateTime.now(),
-        status: InvoiceStatus.confirmed, // Auto-confirmed? Or Draft? Let's say Confirmed for Direct Transfer
+        status: InvoiceStatus.confirmed,
         items: enrichedItems,
-        discount: 0,
-        tax: 0,
-        paidAmount: 0,
-        notes: 'تم إنشاؤها تلقائياً من عملية التحويل رقم $conversionId',
+        notes: 'تم إنشاؤها تلقائياً من عملية التحويل',
       );
 
       await invoiceRepo.createInvoice(invoice);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('تم التحويل وإنشاء الفاتورة بنجاح'),
+          content: Text('تم التحويل وتبلغ التكلفة بنجاح وترحيلها للفاتورة'),
           behavior: SnackBarBehavior.floating,
-        ));
+        ),
+        );
         Navigator.pop(context);
       }
     } catch (e) {
@@ -419,18 +417,21 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ: $e')));
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   Future<void> _saveConversion() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
     if (_outputs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يجب إضافة صنف واحد على الأقل')));
       return;
     }
     if (_processingLoss < 0) {
-       // Should not happen with clamp, but logic check
        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('النواتج أكبر من المصدر!')));
        return;
     }
@@ -446,16 +447,19 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
         createdBy: 1, // Default admin
       );
 
+      // forceInventory: false enforces the "Only Whole Chicken in stock" rule
       await ref.read(stockConversionRepositoryProvider).convertStock(
         conversion: conversion,
         items: _outputs,
+        forceInventory: false,
       );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('تم حفظ عملية التحويل بنجاح'),
+          content: Text('تم حفظ عملية التحويل بنجاح (الأصناف النهائية لم تضف للمخزون حسب الإعدادات)'),
           behavior: SnackBarBehavior.floating,
-        ));
+        ),
+        );
         Navigator.pop(context);
       }
     } catch (e) {
@@ -463,7 +467,9 @@ class _StockConversionScreenState extends ConsumerState<StockConversionScreen> {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('خطأ: $e')));
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 }

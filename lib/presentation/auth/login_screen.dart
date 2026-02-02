@@ -43,7 +43,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     final success = await ref.read(authProvider.notifier).login(
       _usernameController.text.trim(),
@@ -58,7 +60,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         await prefs.remove('saved_username');
       }
 
-      Navigator.of(context).pushReplacement(
+      if (!mounted) {
+        return;
+      }
+      await Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     }
@@ -89,11 +94,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               width: 400,
               padding: const EdgeInsets.all(32),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),

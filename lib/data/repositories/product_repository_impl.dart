@@ -66,7 +66,7 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<List<domain.Product>> getActiveProducts() async {
     final query = database.select(database.products)
-      ..where((t) => t.isActive.equals(true) & t.deletedAt.isNull() & t.productType.equals(ProductType.finalProduct.code));
+      ..where((t) => t.isActive.equals(true) & t.deletedAt.isNull());
     final rows = await query.get();
     return rows.map(_mapToEntity).toList().cast<domain.Product>();
   }
@@ -74,7 +74,7 @@ class ProductRepositoryImpl implements ProductRepository {
   @override
   Future<List<domain.Product>> getInventoryProducts() async {
     final query = database.select(database.products)
-      ..where((t) => t.isActive.equals(true) & t.deletedAt.isNull() & t.productType.isIn([ProductType.intermediate.code, ProductType.finalProduct.code]));
+      ..where((t) => t.isActive.equals(true) & t.deletedAt.isNull());
     final rows = await query.get();
     return rows.map(_mapToEntity).toList().cast<domain.Product>();
   }

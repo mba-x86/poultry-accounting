@@ -16,6 +16,7 @@ class RawMeatProcessing extends Equatable {
     required this.totalCost,
     required this.processingDate,
     required this.createdBy,
+    this.operationalExpenses = 0.0,
     this.id,
     this.supplierId,
     this.notes,
@@ -40,6 +41,7 @@ class RawMeatProcessing extends Equatable {
 
   final double netWeight; // Overall net weight (usually same as slaughteredNetWeight)
   final double totalCost;
+  final double operationalExpenses;
   final int? supplierId;
   final DateTime processingDate;
   final String? notes;
@@ -61,6 +63,7 @@ class RawMeatProcessing extends Equatable {
         slaughteredNetWeight,
         netWeight,
         totalCost,
+        operationalExpenses,
         supplierId,
         processingDate,
         notes,
@@ -102,6 +105,7 @@ class RawMeatProcessing extends Equatable {
       slaughteredNetWeight: slaughteredNetWeight ?? this.slaughteredNetWeight,
       netWeight: netWeight ?? this.netWeight,
       totalCost: totalCost ?? this.totalCost,
+      operationalExpenses: operationalExpenses ?? this.operationalExpenses,
       supplierId: supplierId ?? this.supplierId,
       processingDate: processingDate ?? this.processingDate,
       notes: notes ?? this.notes,

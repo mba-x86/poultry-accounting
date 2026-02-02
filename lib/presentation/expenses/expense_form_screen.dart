@@ -105,7 +105,7 @@ class _ExpenseFormScreenState extends ConsumerState<ExpenseFormScreen> {
       ),
     );
 
-    if (confirmed == true) {
+    if (confirmed ?? false) {
       try {
         await ref.read(expenseRepositoryProvider).deleteExpense(widget.expense!.id!);
         if (mounted) {

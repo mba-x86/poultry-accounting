@@ -168,16 +168,26 @@ class ReportRepositoryImpl implements ReportRepository {
     // 4. Salaries
     final salariesQuery = database.selectOnly(database.salaries)
       ..addColumns([database.salaries.amount.sum()]);
-    if (fromDate != null) salariesQuery.where(database.salaries.salaryDate.isBiggerOrEqualValue(fromDate));
-    if (toDate != null) salariesQuery.where(database.salaries.salaryDate.isSmallerOrEqualValue(toDate));
-    final salaries = await salariesQuery.map((row) => row.read(database.salaries.amount.sum())).getSingle() ?? 0.0;
+    if (fromDate != null) {
+      salariesQuery.where(database.salaries.salaryDate.isBiggerOrEqualValue(fromDate));
+    }
+    if (toDate != null) {
+      salariesQuery.where(database.salaries.salaryDate.isSmallerOrEqualValue(toDate));
+    }
+    final salaries =
+        await salariesQuery.map((row) => row.read(database.salaries.amount.sum())).getSingle() ?? 0.0;
 
     // 5. Annual Inventories (Adjustments)
     final returnsQuery = database.selectOnly(database.annualInventories)
       ..addColumns([database.annualInventories.amount.sum()]);
-    if (fromDate != null) returnsQuery.where(database.annualInventories.inventoryDate.isBiggerOrEqualValue(fromDate));
-    if (toDate != null) returnsQuery.where(database.annualInventories.inventoryDate.isSmallerOrEqualValue(toDate));
-    final annualInventories = await returnsQuery.map((row) => row.read(database.annualInventories.amount.sum())).getSingle() ?? 0.0;
+    if (fromDate != null) {
+      returnsQuery.where(database.annualInventories.inventoryDate.isBiggerOrEqualValue(fromDate));
+    }
+    if (toDate != null) {
+      returnsQuery.where(database.annualInventories.inventoryDate.isSmallerOrEqualValue(toDate));
+    }
+    final annualInventories =
+        await returnsQuery.map((row) => row.read(database.annualInventories.amount.sum())).getSingle() ?? 0.0;
 
     // 6. Calculate Profits
     final profit = revenue - cogs - expenses;
@@ -311,8 +321,12 @@ class ReportRepositoryImpl implements ReportRepository {
     ]);
 
     query.where(database.salesInvoices.status.equals(InvoiceStatus.confirmed.code));
-    if (fromDate != null) query.where(database.salesInvoices.invoiceDate.isBiggerOrEqualValue(fromDate));
-    if (toDate != null) query.where(database.salesInvoices.invoiceDate.isSmallerOrEqualValue(toDate));
+    if (fromDate != null) {
+      query.where(database.salesInvoices.invoiceDate.isBiggerOrEqualValue(fromDate));
+    }
+    if (toDate != null) {
+      query.where(database.salesInvoices.invoiceDate.isSmallerOrEqualValue(toDate));
+    }
 
     final results = await query.get();
     final Map<int, Map<String, dynamic>> customerStats = {};
@@ -438,7 +452,7 @@ class ReportRepositoryImpl implements ReportRepository {
         type: 'opening',
         amount: 0,
         balance: balance,
-      ));
+      ),);
     }
 
     for (final tx in transactions) {
@@ -453,7 +467,7 @@ class ReportRepositoryImpl implements ReportRepository {
         type: tx.type,
         amount: tx.amount,
         balance: balance,
-      ));
+      ),);
     }
 
     return report;
@@ -489,23 +503,31 @@ class ReportRepositoryImpl implements ReportRepository {
         debit: 0,
         credit: 0,
         balance: balance,
-      ));
+      ),);
     }
 
     // 2. Fetch Sales Invoices
     final salesQuery = database.select(database.salesInvoices)
       ..where((tbl) => tbl.customerId.equals(customerId))
       ..where((tbl) => tbl.status.equals(InvoiceStatus.confirmed.code));
-    if (fromDate != null) salesQuery.where((tbl) => tbl.invoiceDate.isBiggerOrEqualValue(fromDate));
-    if (toDate != null) salesQuery.where((tbl) => tbl.invoiceDate.isSmallerOrEqualValue(toDate));
+    if (fromDate != null) {
+      salesQuery.where((tbl) => tbl.invoiceDate.isBiggerOrEqualValue(fromDate));
+    }
+    if (toDate != null) {
+      salesQuery.where((tbl) => tbl.invoiceDate.isSmallerOrEqualValue(toDate));
+    }
     final sales = await salesQuery.get();
 
     // 3. Fetch Receipts
     final receiptsQuery = database.select(database.payments)
       ..where((tbl) => tbl.customerId.equals(customerId))
       ..where((tbl) => tbl.type.equals('receipt'));
-    if (fromDate != null) receiptsQuery.where((tbl) => tbl.paymentDate.isBiggerOrEqualValue(fromDate));
-    if (toDate != null) receiptsQuery.where((tbl) => tbl.paymentDate.isSmallerOrEqualValue(toDate));
+    if (fromDate != null) {
+      receiptsQuery.where((tbl) => tbl.paymentDate.isBiggerOrEqualValue(fromDate));
+    }
+    if (toDate != null) {
+      receiptsQuery.where((tbl) => tbl.paymentDate.isSmallerOrEqualValue(toDate));
+    }
     final receipts = await receiptsQuery.get();
 
     // 4. Merge and sort
@@ -539,7 +561,7 @@ class ReportRepositoryImpl implements ReportRepository {
           debit: tx.total,
           credit: 0,
           balance: balance,
-        ));
+        ),);
       } else if (tx is PaymentTable) {
         balance -= tx.amount;
         entries.add(CustomerStatementEntry(
@@ -549,7 +571,7 @@ class ReportRepositoryImpl implements ReportRepository {
           debit: 0,
           credit: tx.amount,
           balance: balance,
-        ));
+        ),);
       }
     }
 
@@ -587,23 +609,31 @@ class ReportRepositoryImpl implements ReportRepository {
         credit: 0,
         balance: balance,
         type: 'opening',
-      ));
+      ),);
     }
 
     // 2. Fetch Purchase Invoices
     final purchaseQuery = database.select(database.purchaseInvoices)
       ..where((tbl) => tbl.supplierId.equals(supplierId))
       ..where((tbl) => tbl.status.equals(InvoiceStatus.confirmed.code));
-    if (fromDate != null) purchaseQuery.where((tbl) => tbl.invoiceDate.isBiggerOrEqualValue(fromDate));
-    if (toDate != null) purchaseQuery.where((tbl) => tbl.invoiceDate.isSmallerOrEqualValue(toDate));
+    if (fromDate != null) {
+      purchaseQuery.where((tbl) => tbl.invoiceDate.isBiggerOrEqualValue(fromDate));
+    }
+    if (toDate != null) {
+      purchaseQuery.where((tbl) => tbl.invoiceDate.isSmallerOrEqualValue(toDate));
+    }
     final purchases = await purchaseQuery.get();
 
     // 3. Fetch Payments
     final paymentsQuery = database.select(database.payments)
       ..where((tbl) => tbl.supplierId.equals(supplierId))
       ..where((tbl) => tbl.type.equals('payment'));
-    if (fromDate != null) paymentsQuery.where((tbl) => tbl.paymentDate.isBiggerOrEqualValue(fromDate));
-    if (toDate != null) paymentsQuery.where((tbl) => tbl.paymentDate.isSmallerOrEqualValue(toDate));
+    if (fromDate != null) {
+      paymentsQuery.where((tbl) => tbl.paymentDate.isBiggerOrEqualValue(fromDate));
+    }
+    if (toDate != null) {
+      paymentsQuery.where((tbl) => tbl.paymentDate.isSmallerOrEqualValue(toDate));
+    }
     final payments = await paymentsQuery.get();
 
     // 4. Merge and sort
@@ -626,8 +656,7 @@ class ReportRepositoryImpl implements ReportRepository {
           credit: tx.total,
           balance: balance,
           isPaid: tx.paidAmount >= tx.total,
-          type: 'purchase',
-        ));
+        ),);
       } else if (tx is PaymentTable) {
         balance -= tx.amount;
         entries.add(SupplierStatementEntry(
@@ -638,7 +667,7 @@ class ReportRepositoryImpl implements ReportRepository {
           credit: 0,
           balance: balance,
           type: 'payment',
-        ));
+        ),);
       }
     }
 
@@ -686,7 +715,7 @@ class ReportRepositoryImpl implements ReportRepository {
     final invoices = await salesQuery.get();
 
     double totalSalesAmount = 0, totalWeightSold = 0;
-    Map<int, Map<String, dynamic>> productBreakdownMap = {};
+    final Map<int, Map<String, dynamic>> productBreakdownMap = {};
 
     for (final inv in invoices) {
       totalSalesAmount += inv.total;

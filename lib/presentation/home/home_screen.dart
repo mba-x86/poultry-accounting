@@ -1,28 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:poultry_accounting/core/providers/auth_provider.dart';
 import 'package:poultry_accounting/core/providers/database_providers.dart';
 import 'package:poultry_accounting/presentation/admin/settings_screen.dart';
+import 'package:poultry_accounting/presentation/annual_returns/annual_inventories_screen.dart';
 import 'package:poultry_accounting/presentation/customers/customer_management_screen.dart';
-import 'package:poultry_accounting/presentation/suppliers/supplier_management_screen.dart';
-import 'package:poultry_accounting/presentation/sales/sales_management_screen.dart';
 import 'package:poultry_accounting/presentation/expenses/expense_list_screen.dart';
 import 'package:poultry_accounting/presentation/inventory/stock_dashboard_screen.dart';
 import 'package:poultry_accounting/presentation/partnership/partnership_screen.dart';
-import 'package:poultry_accounting/presentation/payments/payment_list_screen.dart';
 import 'package:poultry_accounting/presentation/pricing/daily_pricing_screen.dart';
 import 'package:poultry_accounting/presentation/processing/raw_meat_processing_screen.dart';
 import 'package:poultry_accounting/presentation/processing/stock_conversion_screen.dart';
 import 'package:poultry_accounting/presentation/products/product_list_screen.dart';
 import 'package:poultry_accounting/presentation/purchases/purchase_list_screen.dart';
-import 'package:poultry_accounting/presentation/pricing/daily_pricing_screen.dart';
-import 'package:poultry_accounting/presentation/pricing/live_chicken_pricing_screen.dart';
 import 'package:poultry_accounting/presentation/reports/central_debt_register_screen.dart';
 import 'package:poultry_accounting/presentation/reports/reports_screen.dart';
-
-import 'package:poultry_accounting/presentation/annual_returns/annual_inventories_screen.dart';
 import 'package:poultry_accounting/presentation/salaries/salary_list_screen.dart';
-
-import 'package:poultry_accounting/core/providers/auth_provider.dart';
+import 'package:poultry_accounting/presentation/sales/sales_management_screen.dart';
+import 'package:poultry_accounting/presentation/suppliers/supplier_management_screen.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -59,11 +54,11 @@ class HomeScreen extends ConsumerWidget {
                     child: Icon(
                       Icons.account_balance,
                       size: 150,
-                      color: Colors.white.withOpacity(0.1),
+                      color: Colors.white.withValues(alpha: 0.1),
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.end,
@@ -85,7 +80,7 @@ class HomeScreen extends ConsumerWidget {
                         Text(
                           ref.watch(authProvider).user?.fullName ?? 'المسؤول',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.8),
+                            color: Colors.white.withValues(alpha: 0.8),
                             fontSize: 14,
                           ),
                         ),
@@ -105,22 +100,37 @@ class HomeScreen extends ConsumerWidget {
                   const Divider(height: 8),
                   
                   // العملاء
-                  _buildDrawerItem(Icons.people, 'العملاء', () {
-                    Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerManagementScreen()));
-                  }, color: Colors.blue),
+                  _buildDrawerItem(
+                    Icons.people,
+                    'العملاء',
+                    () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const CustomerManagementScreen()));
+                    },
+                    color: Colors.blue,
+                  ),
 
                   // الموردين
-                  _buildDrawerItem(Icons.business, 'الموردين', () {
-                    Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierManagementScreen()));
-                  }, color: Colors.orange),
+                  _buildDrawerItem(
+                    Icons.business,
+                    'الموردين',
+                    () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SupplierManagementScreen()));
+                    },
+                    color: Colors.orange,
+                  ),
 
                   // المبيعات والتحصيل
-                  _buildDrawerItem(Icons.point_of_sale, 'المبيعات والتحصيل', () {
-                    Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesManagementScreen()));
-                  }, color: Colors.green),
+                  _buildDrawerItem(
+                    Icons.point_of_sale,
+                    'المبيعات والتحصيل',
+                    () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (_) => const SalesManagementScreen()));
+                    },
+                    color: Colors.green,
+                  ),
 
                   const Divider(height: 8),
 
@@ -216,7 +226,7 @@ class HomeScreen extends ConsumerWidget {
             ),
             const Divider(height: 1),
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: ListTile(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

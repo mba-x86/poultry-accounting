@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:poultry_accounting/core/providers/database_providers.dart';
+
 import 'package:poultry_accounting/core/constants/app_constants.dart';
+import 'package:poultry_accounting/core/providers/database_providers.dart';
+import 'package:poultry_accounting/domain/entities/expense.dart';
 import 'package:poultry_accounting/domain/entities/processing_output.dart';
 import 'package:poultry_accounting/domain/entities/product.dart';
 import 'package:poultry_accounting/domain/entities/raw_meat_processing.dart';
+import 'package:poultry_accounting/domain/entities/supplier.dart';
+import 'package:poultry_accounting/domain/entities/purchase_invoice.dart';
+import 'package:poultry_accounting/data/database/database.dart' as db_file;
+import 'package:drift/drift.dart' show Value;
 
 class RawMeatProcessingScreen extends ConsumerStatefulWidget {
   const RawMeatProcessingScreen({super.key});
@@ -14,9 +20,10 @@ class RawMeatProcessingScreen extends ConsumerStatefulWidget {
 }
 
 class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScreen> {
-  final _formKey = GlobalKey<FormState>();
+  // Note: FormKey is used implicitly in the Stepper for validation
   int _currentStep = 0;
   bool _isLoading = false;
+  Supplier? _selectedSupplier;
 
   // Stage 1: Live
   final _liveGrossController = TextEditingController(text: '0');
@@ -28,6 +35,7 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
   final _slaughterGrossController = TextEditingController(text: '0');
   final _slaughterBasketWeightController = TextEditingController(text: '0.6');
   final _slaughterBasketCountController = TextEditingController(text: '0');
+  final _operationalExpensesController = TextEditingController(text: '0');
 
   // Stage 3: Sorted Outputs
   final List<ProcessingOutput> _outputs = [];
@@ -42,6 +50,7 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
     _slaughterGrossController.dispose();
     _slaughterBasketWeightController.dispose();
     _slaughterBasketCountController.dispose();
+    _operationalExpensesController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -62,6 +71,9 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
 
   double get _shrinkageWeight => (_liveNetWeight - _slaughterNetWeight).clamp(0, double.infinity);
   double get _totalCost => _liveNetWeight * (double.tryParse(_pricePerKgController.text) ?? 0);
+  double get _operationalExpenses => double.tryParse(_operationalExpensesController.text) ?? 0;
+  double get _totalSlaughteredCost => _totalCost + _operationalExpenses;
+  double get _slaughteredUnitCost => _slaughterNetWeight > 0 ? (_totalSlaughteredCost / _slaughterNetWeight) : 0.0;
 
   @override
   Widget build(BuildContext context) {
@@ -76,7 +88,7 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
             type: StepperType.horizontal,
             currentStep: _currentStep,
             onStepContinue: () {
-              if (_currentStep < 2) {
+              if (_currentStep < 1) {
                 setState(() => _currentStep++);
               } else {
                 _saveProcessing();
@@ -98,11 +110,11 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
                       child: ElevatedButton(
                         onPressed: details.onStepContinue,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _currentStep == 2 ? Colors.green : Colors.indigo,
+                          backgroundColor: _currentStep == 1 ? Colors.green : Colors.indigo,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                         ),
                         child: Text(
-                          _currentStep == 2 ? 'تأكيد وحفظ الدورة' : 'التالي',
+                          _currentStep == 1 ? 'تأكيد وحفظ الدورة' : 'التالي',
                           style: const TextStyle(fontSize: 16, color: Colors.white),
                         ),
                       ),
@@ -129,12 +141,6 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
                 state: _currentStep > 1 ? StepState.complete : StepState.editing,
                 content: _buildSlaughterSection(),
               ),
-              Step(
-                title: const Text('فرز الأصناف'),
-                isActive: _currentStep >= 2,
-                state: _currentStep > 2 ? StepState.complete : StepState.editing,
-                content: _buildSortingSection(),
-              ),
             ],
           ),
     );
@@ -144,6 +150,8 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        _buildSupplierSelector(),
+        const SizedBox(height: 16),
         _buildInfoCard('توزين الدجاج الحي (في الصناديق)'),
         const SizedBox(height: 16),
         _buildWeightInputRow(
@@ -162,6 +170,30 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
     );
   }
 
+  Widget _buildSupplierSelector() {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: FutureBuilder<List<Supplier>>(
+          future: ref.read(supplierRepositoryProvider).getAllSuppliers(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return const LinearProgressIndicator();
+            return DropdownButtonFormField<Supplier>(
+              value: _selectedSupplier,
+              decoration: const InputDecoration(
+                labelText: 'اختر المورد (سيتم إنشاء فاتورة شراء تلقائية)',
+                prefixIcon: Icon(Icons.local_shipping),
+                border: InputBorder.none,
+              ),
+              items: snapshot.data!.map((s) => DropdownMenuItem(value: s, child: Text(s.name))).toList(),
+              onChanged: (val) => setState(() => _selectedSupplier = val),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildSlaughterSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,9 +209,25 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
           tareLabel: 'وزن السلة الفارغة',
         ),
         const SizedBox(height: 16),
+        TextFormField(
+          controller: _operationalExpensesController,
+          decoration: const InputDecoration(
+            labelText: 'مصاريف تشغيلية (₪)',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.money_off),
+            suffixText: '₪',
+          ),
+          keyboardType: TextInputType.number,
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 16),
         _buildSummaryBox('الوزن المذبوح الصافي', _slaughterNetWeight, 'كغ', Colors.green),
         const SizedBox(height: 8),
         _buildSummaryBox('إجمالي النقص (الهالك)', _shrinkageWeight, 'كغ', Colors.orange),
+        const SizedBox(height: 8),
+        _buildSummaryBox('تكلفة الجاج المذبوح (حي + مصاريف)', _totalSlaughteredCost, '₪', Colors.blue),
+        const SizedBox(height: 8),
+        _buildSummaryBox('تحويل التكلفة للكيلو (صافي)', _slaughteredUnitCost, '₪/كغ', Colors.indigo),
         const SizedBox(height: 16),
         const SizedBox(height: 16),
         Container(
@@ -195,29 +243,6 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
             leading: Icon(Icons.info_outline, color: Colors.blue),
           ),
         ),
-      ],
-    );
-  }
-
-  Widget _buildSortingSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('توزيع الأصناف (فرز)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ElevatedButton.icon(
-              onPressed: _showAddOutputDialog,
-              icon: const Icon(Icons.add),
-              label: const Text('إضافة صنف'),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _buildOutputsList(),
-        const SizedBox(height: 16),
-        _buildSortingSummary(),
         const SizedBox(height: 16),
         TextField(
           controller: _notesController,
@@ -227,6 +252,7 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
       ],
     );
   }
+
 
   Widget _buildWeightInputRow({
     required TextEditingController grossController,
@@ -302,7 +328,7 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         border: Border.all(color: color),
         borderRadius: BorderRadius.circular(8),
       ),
@@ -316,284 +342,21 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
     );
   }
 
-  Widget _buildOutputsList() {
-    return ref.watch(productsStreamProvider).when(
-      loading: () => const LinearProgressIndicator(),
-      error: (e, s) => Text('خطأ: $e'),
-      data: (products) {
-        if (_outputs.isEmpty) {
-          return const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('لم يتم إضافة أي أصناف بعد')));
-        }
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: _outputs.length,
-          itemBuilder: (context, index) {
-            final output = _outputs[index];
-            final product = products.firstWhere((p) => p.id == output.productId);
-            return Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: ListTile(
-                title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('صافي: ${output.quantity} كغ (${output.basketCount} سلال)'),
-                trailing: Text('${output.yieldPercentage.toStringAsFixed(1)}%', style: const TextStyle(color: Colors.blue)),
-                leading: IconButton(
-                  icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
-                  onPressed: () => setState(() => _outputs.removeAt(index)),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
 
-  Widget _buildSortingSummary() {
-    final sortedTotal = _outputs.fold<double>(0, (sum, i) => sum + i.quantity);
-    final remaining = (_slaughterNetWeight - sortedTotal).clamp(0.0, double.infinity);
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.blueGrey.shade50, borderRadius: BorderRadius.circular(8)),
-      child: Column(
-        children: [
-          _summaryRow('إجمالي وزن الأصناف المفرزة:', '${sortedTotal.toStringAsFixed(2)} كغ'),
-          _summaryRow('المتبقي للتوزيع (فائض):', '${remaining.toStringAsFixed(2)} كغ', isRed: remaining > 0.1),
-          if (remaining > 0.1) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => _showAddSurplusDialog(remaining),
-                icon: const Icon(Icons.inventory_2_outlined),
-                label: const Text('تخزين المتبقي كدجاج كامل (فائض)'),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
 
-  void _showAddSurplusDialog(double remainingWeight) {
-    Product? selectedProduct;
-    // Try to find a product named "كامل" or "Whole"
-    ref.read(productsStreamProvider).whenData((products) {
-      try {
-        selectedProduct = products.firstWhere(
-          (p) => p.name.contains('كامل') || p.name.toLowerCase().contains('whole'),
-        );
-      } catch (_) {}
-    });
 
-    DateTime selectedDate = DateTime.now();
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('تخزين الفائض'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('سيتم إضافة $remainingWeight كغ إلى المخزون كأصناف جاهزة للبيع.'),
-              const SizedBox(height: 16),
-              ref.watch(productsStreamProvider).when(
-                data: (prods) => DropdownButtonFormField<Product>(
-                  value: selectedProduct,
-                  decoration: const InputDecoration(labelText: 'صنف التخزين (دجاج كامل)'),
-                  items: prods.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
-                  onChanged: (val) => selectedProduct = val,
-                ),
-                loading: () => const CircularProgressIndicator(),
-                error: (e, s) => Text('خطأ: $e'),
-              ),
-              const SizedBox(height: 16),
-              ListTile(
-                title: const Text('تاريخ دخول المخزن'),
-                subtitle: Text('${selectedDate.year}-${selectedDate.month}-${selectedDate.day}'),
-                trailing: const Icon(Icons.calendar_today),
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: selectedDate,
-                    firstDate: DateTime.now().subtract(const Duration(days: 30)),
-                    lastDate: DateTime.now().add(const Duration(days: 30)),
-                  );
-                  if (date != null) {
-                    setDialogState(() => selectedDate = date);
-                  }
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-            ElevatedButton(
-              onPressed: () {
-                if (selectedProduct != null) {
-                  setState(() {
-                    _outputs.add(ProcessingOutput(
-                      processingId: 0, 
-                      productId: selectedProduct!.id!,
-                      quantity: remainingWeight,
-                      yieldPercentage: _slaughterNetWeight > 0 ? (remainingWeight / _slaughterNetWeight) * 100 : 0,
-                      basketCount: 0,
-                      basketWeight: 0,
-                      grossWeight: remainingWeight,
-                      inventoryDate: selectedDate,
-                    ));
-                  });
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('تأكيد التخزين'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _summaryRow(String label, String value, {bool isRed = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label),
-        Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: isRed ? Colors.red : Colors.black)),
-      ],
-    );
-  }
-
-  void _showAddOutputDialog() {
-    Product? selectedProduct;
-    final grossController = TextEditingController();
-    final countController = TextEditingController(text: '1');
-    final tareController = TextEditingController(text: '0.6');
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) {
-          double calculateNet() {
-            final gross = double.tryParse(grossController.text) ?? 0;
-            final count = int.tryParse(countController.text) ?? 0;
-            final tare = double.tryParse(tareController.text) ?? 0;
-            return (gross - (count * tare)).clamp(0, double.infinity);
-          }
-
-          return AlertDialog(
-            title: const Text('إضافة صنف مفروز'),
-            content: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ref.watch(productsStreamProvider).when(
-                    data: (prods) => DropdownButtonFormField<Product>(
-                      decoration: const InputDecoration(labelText: 'اختر الصنف'),
-                      items: prods.map((p) => DropdownMenuItem(value: p, child: Text(p.name))).toList(),
-                      onChanged: (val) => selectedProduct = val,
-                    ),
-                    loading: () => const CircularProgressIndicator(),
-                    error: (e, s) => Text('خطأ: $e'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: grossController,
-                    decoration: const InputDecoration(labelText: 'الوزن القائم (صنف + سلال)', border: OutlineInputBorder()),
-                    keyboardType: TextInputType.number,
-                    onChanged: (_) => setDialogState(() {}),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: countController,
-                          decoration: const InputDecoration(labelText: 'عدد السلال', border: OutlineInputBorder()),
-                          keyboardType: TextInputType.number,
-                          onChanged: (_) => setDialogState(() {}),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextField(
-                          controller: tareController,
-                          decoration: const InputDecoration(labelText: 'وزن السلة', border: OutlineInputBorder()),
-                          keyboardType: TextInputType.number,
-                          onChanged: (_) => setDialogState(() {}),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.blue.shade50),
-                    child: Text('الوزن الصافي للصنف: ${calculateNet().toStringAsFixed(2)} كغ', textAlign: TextAlign.center),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('إلغاء')),
-              ElevatedButton(
-                onPressed: () {
-                  final net = calculateNet();
-                  if (selectedProduct != null && net > 0) {
-                    setState(() {
-                      _outputs.add(ProcessingOutput(
-                        processingId: 0, 
-                        productId: selectedProduct!.id!,
-                        grossWeight: double.parse(grossController.text),
-                        basketWeight: double.parse(tareController.text),
-                        basketCount: int.parse(countController.text),
-                        quantity: net,
-                        yieldPercentage: _slaughterNetWeight > 0 ? (net / _slaughterNetWeight) * 100 : 0,
-                      ));
-                    });
-                    Navigator.pop(context);
-                  }
-                },
-                child: const Text('إضافة'),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
 
   Future<void> _saveProcessing() async {
     if (_slaughterNetWeight <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('الرجاء التأكد من توزين الدجاج بعد الذبح')));
       return;
     }
-    // If no outputs added in sorting step, offer to store as whole chicken
-    if (_outputs.isEmpty) {
-      final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('تخزين كدجاج كامل؟'),
-          content: const Text('لم تقم بفرز أي أصناف. هل تريد تخزين كامل الكمية كـ "دجاج كامل"؟'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('لا، سأقوم بالفرز')),
-            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('نعم، تخزين كامل')),
-          ],
-        ),
-      );
-      
-      if (confirm == true) {
-        await _prepareWholeChickenOutput();
-      } else {
-        return;
-      }
-    }
-
     setState(() => _isLoading = true);
     try {
+      // Automatically prepare whole chicken output
+      await _prepareWholeChickenOutput();
+
       final repo = ref.read(processingRepositoryProvider);
       final processing = RawMeatProcessing(
         batchNumber: 'P-${DateTime.now().millisecondsSinceEpoch}',
@@ -607,18 +370,28 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
         slaughteredNetWeight: _slaughterNetWeight,
         netWeight: _slaughterNetWeight,
         totalCost: _totalCost,
+        operationalExpenses: _operationalExpenses,
         processingDate: DateTime.now(),
         createdBy: 1,
         notes: _notesController.text,
       );
 
-      await repo.createProcessing(processing, _outputs);
+      final id = await repo.createProcessing(processing, _outputs);
+
+      if (_selectedSupplier != null) {
+        await _createAutomaticPurchase(id, processing.batchNumber);
+      }
+
+      if (_operationalExpenses > 0) {
+        await _logOperationalExpense(processing.batchNumber);
+      }
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('تم تسجيل دورة التجهيز بنجاح'),
           behavior: SnackBarBehavior.floating,
-        ));
+        ),
+        );
         Navigator.pop(context);
       }
     } catch (e) {
@@ -626,7 +399,9 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('حدث خطأ أثناء الحفظ: $e')));
       }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -641,6 +416,80 @@ class _RawMeatProcessingScreenState extends ConsumerState<RawMeatProcessingScree
       basketWeight: double.tryParse(_slaughterBasketWeightController.text) ?? 0,
       grossWeight: double.tryParse(_slaughterGrossController.text) ?? 0,
       inventoryDate: DateTime.now(),
-    ));
+    ),
+  );
+  }
+
+  Future<void> _logOperationalExpense(String batchNumber) async {
+    try {
+      final expenseRepo = ref.read(expenseRepositoryProvider);
+      final categories = await expenseRepo.getAllCategories();
+      
+      int? categoryId = categories.where((c) => c.name.contains('ذبح') || c.name.contains('تقطيع') || c.name.contains('تشغيل')).firstOrNull?.id;
+      
+      if (categoryId == null) {
+        categoryId = await expenseRepo.createCategory(const ExpenseCategory(name: 'مصاريف تقطيع وتشغيل'));
+      }
+
+      await expenseRepo.createExpense(Expense(
+        categoryId: categoryId,
+        amount: _operationalExpenses,
+        expenseDate: DateTime.now(),
+        description: 'مصاريف تشغيلية لدورة التجهيز: $batchNumber',
+        notes: 'تم إنشاؤها تلقائياً من شاشة دورة التجهيز اليومية',
+      ),);
+    } catch (e) {
+      debugPrint('Error auto-logging expense: $e');
+    }
+  }
+
+  Future<void> _createAutomaticPurchase(int processingId, String batchNumber) async {
+    try {
+      final purchaseRepo = ref.read(purchaseRepositoryProvider);
+      final productRepo = ref.read(productRepositoryProvider);
+      
+      final liveChicken = await productRepo.getProductById(AppConstants.liveChickenId);
+      final invoiceNumber = 'AUTO-P-$processingId';
+      
+      final purchaseInvoice = PurchaseInvoice(
+        invoiceNumber: invoiceNumber,
+        supplierId: _selectedSupplier!.id!,
+        invoiceDate: DateTime.now(),
+        status: InvoiceStatus.confirmed,
+        items: [
+          PurchaseInvoiceItem(
+            productId: AppConstants.liveChickenId,
+            productName: liveChicken?.name ?? 'دجاج حي',
+            quantity: _liveNetWeight,
+            unitCost: double.tryParse(_pricePerKgController.text) ?? 0,
+          ),
+        ],
+        notes: 'تم إنشاؤها تلقائياً من دورة التجهيز: $batchNumber',
+      );
+
+      final invId = await purchaseRepo.createPurchaseInvoice(purchaseInvoice);
+      await purchaseRepo.confirmPurchaseInvoice(invId, 1); // Mock user 1
+      
+      // OPTIONAL: Mark the newly created inventory batch as consumed
+      // Since processing is a conversion, the "Live Chicken" shouldn't stay in stock.
+      await _consumeLiveInventory(invId);
+
+    } catch (e) {
+      debugPrint('Error creating automatic purchase: $e');
+    }
+  }
+
+  Future<void> _consumeLiveInventory(int purchaseId) async {
+    try {
+      final appDb = ref.read(databaseProvider);
+      // Update inventory batches created from this purchase to 0 remaining quantity
+      await (appDb.update(appDb.inventoryBatches)..where((t) => t.purchaseInvoiceId.equals(purchaseId))).write(
+        db_file.InventoryBatchesCompanion(
+          remainingQuantity: Value(0),
+        ),
+      );
+    } catch (e) {
+      debugPrint('Error consuming live inventory: $e');
+    }
   }
 }

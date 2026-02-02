@@ -1,16 +1,21 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import 'package:poultry_accounting/core/constants/app_constants.dart';
 import 'package:poultry_accounting/core/providers/database_providers.dart';
 import 'package:poultry_accounting/domain/entities/payment.dart';
-import 'package:poultry_accounting/domain/entities/customer.dart';
-import 'package:poultry_accounting/domain/entities/supplier.dart';
 
 class PaymentFormScreen extends ConsumerStatefulWidget {
+  const PaymentFormScreen({
+    super.key,
+    this.payment,
+    this.initialType,
+  });
+
   final Payment? payment; // For editing (optional)
   final String? initialType; // 'receipt' or 'payment'
-
-  const PaymentFormScreen({super.key, this.payment, this.initialType});
 
   @override
   ConsumerState<PaymentFormScreen> createState() => _PaymentFormScreenState();
@@ -96,7 +101,9 @@ class _PaymentFormScreenState extends ConsumerState<PaymentFormScreen> {
   }
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     if (_type == 'receipt' && _selectedCustomerId == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('يرجى اختيار العميل')));
@@ -174,7 +181,8 @@ class _PaymentFormScreenState extends ConsumerState<PaymentFormScreen> {
                     child: RadioListTile<String>(
                       title: const Text('قبض (وارد)'),
                       value: 'receipt',
-                      groupValue: _type,
+                      toggleable: true,
+                      selected: _type == 'receipt',
                       onChanged: (val) {
                         if (val != null) {
                           setState(() {
@@ -192,7 +200,8 @@ class _PaymentFormScreenState extends ConsumerState<PaymentFormScreen> {
                     child: RadioListTile<String>(
                       title: const Text('صرف (صادر)'),
                       value: 'payment',
-                      groupValue: _type,
+                      toggleable: true,
+                      selected: _type == 'payment',
                       onChanged: (val) {
                         if (val != null) {
                           setState(() {
@@ -216,7 +225,7 @@ class _PaymentFormScreenState extends ConsumerState<PaymentFormScreen> {
                 const SizedBox(height: 8),
                 customersAsync.when(
                   data: (customers) => DropdownButtonFormField<int>(
-                    value: _selectedCustomerId,
+                    initialValue: _selectedCustomerId,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       hintText: 'اختر العميل',
@@ -225,10 +234,10 @@ class _PaymentFormScreenState extends ConsumerState<PaymentFormScreen> {
                     items: customers.map((c) => DropdownMenuItem(
                       value: c.id,
                       child: Text(c.name),
-                    )).toList(),
+                    ),).toList(),
                     onChanged: (val) {
                       setState(() => _selectedCustomerId = val);
-                      _fetchPartyBalance();
+                      unawaited(_fetchPartyBalance());
                     },
                     validator: (val) => val == null ? 'يرجى اختيار العميل' : null,
                   ),
@@ -240,7 +249,7 @@ class _PaymentFormScreenState extends ConsumerState<PaymentFormScreen> {
                 const SizedBox(height: 8),
                 suppliersAsync.when(
                   data: (suppliers) => DropdownButtonFormField<int>(
-                    value: _selectedSupplierId,
+                    initialValue: _selectedSupplierId,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       hintText: 'اختر المورد',
@@ -249,10 +258,10 @@ class _PaymentFormScreenState extends ConsumerState<PaymentFormScreen> {
                     items: suppliers.map((s) => DropdownMenuItem(
                       value: s.id,
                       child: Text(s.name),
-                    )).toList(),
+                    ),).toList(),
                     onChanged: (val) {
                       setState(() => _selectedSupplierId = val);
-                      _fetchPartyBalance();
+                      unawaited(_fetchPartyBalance());
                     },
                     validator: (val) => val == null ? 'يرجى اختيار المورد' : null,
                   ),
@@ -301,8 +310,12 @@ class _PaymentFormScreenState extends ConsumerState<PaymentFormScreen> {
                 keyboardType: TextInputType.number,
                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 validator: (val) {
-                  if (val == null || val.isEmpty) return 'يرجى إدخال المبلغ';
-                  if (double.tryParse(val) == null || double.parse(val) <= 0) return 'يرجى إدخال مبلغ صحيح';
+                  if (val == null || val.isEmpty) {
+                    return 'يرجى إدخال المبلغ';
+                  }
+                  if (double.tryParse(val) == null || double.parse(val) <= 0) {
+                    return 'يرجى إدخال مبلغ صحيح';
+                  }
                   return null;
                 },
               ),
@@ -312,16 +325,18 @@ class _PaymentFormScreenState extends ConsumerState<PaymentFormScreen> {
               const Text('طريقة الدفع:', style: TextStyle(fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               DropdownButtonFormField<PaymentMethod>(
-                value: _method,
+                initialValue: _method,
                 decoration: const InputDecoration(border: OutlineInputBorder()),
                 items: PaymentMethod.values
                     .where((e) => e != PaymentMethod.credit)
                     .map((m) => DropdownMenuItem(
                   value: m,
                   child: Text(m.nameAr),
-                )).toList(),
+                ),).toList(),
                 onChanged: (val) {
-                  if (val != null) setState(() => _method = val);
+                  if (val != null) {
+                    setState(() => _method = val);
+                  }
                 },
               ),
               const SizedBox(height: 16),

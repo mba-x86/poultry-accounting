@@ -67,7 +67,7 @@ class Product {
       defaultPrice: defaultPrice ?? this.defaultPrice,
       description: description ?? this.description,
       isActive: isActive ?? this.isActive,
-      productType: productType ?? this.productType,
+      productType: productType,
       currentStock: currentStock ?? this.currentStock,
       averageCost: averageCost ?? this.averageCost,
       createdAt: createdAt ?? this.createdAt,

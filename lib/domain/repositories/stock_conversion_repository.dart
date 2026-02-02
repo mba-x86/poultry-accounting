@@ -10,10 +10,11 @@ abstract class StockConversionRepository {
   /// Performs the conversion:
   /// 1. Deducts [sourceQuantity] of [sourceProductId] from inventory.
   /// 2. Creates a conversion record.
-  /// 3. Adds [items] to inventory (as new batches).
-  /// Returns the ID of the created conversion.
-  Future<int> convertStock({
+  /// 3. Adds [items] to inventory (as new batches) ONLY if they are intermediate or forceInventory is true.
+  /// Returns the list of items with calculated unit costs.
+  Future<List<StockConversionItem>> convertStock({
     required StockConversion conversion,
     required List<StockConversionItem> items,
+    bool forceInventory = false,
   });
 }

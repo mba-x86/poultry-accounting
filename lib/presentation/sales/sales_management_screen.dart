@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:poultry_accounting/core/providers/database_providers.dart';
-import 'package:poultry_accounting/presentation/sales/sales_invoice_form_screen.dart';
-import 'package:poultry_accounting/presentation/payments/payment_form_screen.dart';
 import 'package:poultry_accounting/core/constants/app_constants.dart';
+import 'package:poultry_accounting/core/providers/database_providers.dart';
 import 'package:poultry_accounting/core/services/pdf_service.dart';
 import 'package:poultry_accounting/domain/entities/invoice.dart';
 import 'package:poultry_accounting/domain/entities/payment.dart';
+import 'package:poultry_accounting/presentation/payments/payment_form_screen.dart';
+import 'package:poultry_accounting/presentation/sales/sales_invoice_form_screen.dart';
 import 'package:printing/printing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -44,7 +44,7 @@ class _SalesManagementScreenState extends ConsumerState<SalesManagementScreen>
           controller: _tabController,
           indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white.withOpacity(0.85),
+          unselectedLabelColor: Colors.white.withValues(alpha: 0.85),
           tabs: const [
             Tab(icon: Icon(Icons.receipt_long), text: 'الفواتير'),
             Tab(icon: Icon(Icons.payments), text: 'المدفوعات'),

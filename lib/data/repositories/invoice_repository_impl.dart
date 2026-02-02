@@ -222,8 +222,8 @@ class InvoiceRepositoryImpl implements InvoiceRepository {
             break;
           }
 
-          final deductAmount = (batch.remainingQuantity >= remainingToDeduct) 
-              ? remainingToDeduct 
+          final deductAmount = (batch.remainingQuantity >= remainingToDeduct)
+              ? remainingToDeduct
               : batch.remainingQuantity;
 
           // Update batch

@@ -36,7 +36,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.white.withOpacity(0.85),
+          unselectedLabelColor: Colors.white.withValues(alpha: 0.85),
           indicatorColor: Colors.white,
           tabs: const [
             Tab(text: 'الأرباح والخسائر'),
@@ -181,7 +181,7 @@ class AgingReportTab extends ConsumerWidget {
                             ),
                           );
                         },
-                      )),
+                      ),),
                     ],);
                   }).toList(),
                 ),

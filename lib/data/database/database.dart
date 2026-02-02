@@ -163,6 +163,7 @@ class StockConversions extends Table {
   TextColumn get notes => text().nullable()();
   @ReferenceName('stockConversionCreatedByUser')
   IntColumn get createdBy => integer().references(Users, #id)();
+  RealColumn get operationalExpenses => real().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 }
 
@@ -296,6 +297,7 @@ class RawMeatProcessings extends Table {
   
   // Financials and Metadata
   RealColumn get totalCost => real().withDefault(const Constant(0))(); 
+  RealColumn get operationalExpenses => real().withDefault(const Constant(0))();
   IntColumn get supplierId => integer().nullable().references(Suppliers, #id)();
   DateTimeColumn get processingDate => dateTime()();
   TextColumn get notes => text().nullable()();
@@ -425,7 +427,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
 
   @override
-  int get schemaVersion => 10;
+  int get schemaVersion => 12;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -557,6 +559,12 @@ class AppDatabase extends _$AppDatabase {
           // Step 4: Drop old table
           await customStatement('DROP TABLE raw_meat_processings_old');
         }
+      }
+      if (from < 11) {
+        await m.addColumn(stockConversions, stockConversions.operationalExpenses);
+      }
+      if (from < 12) {
+        await m.addColumn(rawMeatProcessings, rawMeatProcessings.operationalExpenses);
       }
     },
   );

@@ -1,16 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:poultry_accounting/core/providers/database_providers.dart';
 import 'package:poultry_accounting/core/services/pdf_service.dart';
 import 'package:poultry_accounting/domain/entities/customer.dart';
 import 'package:poultry_accounting/domain/repositories/report_repository.dart';
-import 'package:printing/printing.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class CustomerStatementScreen extends ConsumerStatefulWidget {
-  final Customer? customer;
+  const CustomerStatementScreen({
+    super.key,
+    this.customer,
+  });
 
-  const CustomerStatementScreen({super.key, this.customer});
+  final Customer? customer;
 
   @override
   ConsumerState<CustomerStatementScreen> createState() => _CustomerStatementScreenState();
@@ -28,12 +34,14 @@ class _CustomerStatementScreenState extends ConsumerState<CustomerStatementScree
     super.initState();
     _selectedCustomer = widget.customer;
     if (_selectedCustomer != null) {
-      _fetchStatement();
+      unawaited(_fetchStatement());
     }
   }
 
   Future<void> _fetchStatement() async {
-    if (_selectedCustomer == null) return;
+    if (_selectedCustomer == null) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -57,7 +65,9 @@ class _CustomerStatementScreenState extends ConsumerState<CustomerStatementScree
   }
 
   Future<void> _exportToPdf() async {
-    if (_selectedCustomer == null || _entries.isEmpty) return;
+    if (_selectedCustomer == null || _entries.isEmpty) {
+      return;
+    }
 
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -98,7 +108,7 @@ class _CustomerStatementScreenState extends ConsumerState<CustomerStatementScree
           if (_entries.isNotEmpty && _selectedCustomer != null)
             IconButton(
               icon: const Icon(Icons.picture_as_pdf),
-              onPressed: () => _exportToPdf(),
+              onPressed: _exportToPdf,
             ),
         ],
       ),
@@ -125,7 +135,7 @@ class _CustomerStatementScreenState extends ConsumerState<CustomerStatementScree
         children: [
           ref.watch(customersStreamProvider).when(
                 data: (customers) => DropdownButtonFormField<Customer>(
-                  value: _selectedCustomer,
+                  initialValue: _selectedCustomer,
                   decoration: const InputDecoration(
                     labelText: 'العميل',
                     border: OutlineInputBorder(),
@@ -134,11 +144,12 @@ class _CustomerStatementScreenState extends ConsumerState<CustomerStatementScree
                       .map((c) => DropdownMenuItem(
                             value: c,
                             child: Text(c.name),
-                          ))
+                          ),
+                        )
                       .toList(),
                   onChanged: (val) {
                     setState(() => _selectedCustomer = val);
-                    _fetchStatement();
+                    unawaited(_fetchStatement());
                   },
                 ),
                 loading: () => const LinearProgressIndicator(),
@@ -158,13 +169,15 @@ class _CustomerStatementScreenState extends ConsumerState<CustomerStatementScree
                     );
                     if (date != null) {
                       setState(() => _fromDate = date);
-                      _fetchStatement();
+                      unawaited(_fetchStatement());
                     }
                   },
                   icon: const Icon(Icons.date_range),
-                  label: Text(_fromDate == null
-                      ? 'من تاريخ'
-                      : '${_fromDate!.day}/${_fromDate!.month}/${_fromDate!.year}'),
+                  label: Text(
+                    _fromDate == null
+                        ? 'من تاريخ'
+                        : '${_fromDate!.day}/${_fromDate!.month}/${_fromDate!.year}',
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -179,13 +192,15 @@ class _CustomerStatementScreenState extends ConsumerState<CustomerStatementScree
                     );
                     if (date != null) {
                       setState(() => _toDate = date);
-                      _fetchStatement();
+                      unawaited(_fetchStatement());
                     }
                   },
                   icon: const Icon(Icons.date_range),
-                  label: Text(_toDate == null
-                      ? 'إلى تاريخ'
-                      : '${_toDate!.day}/${_toDate!.month}/${_toDate!.year}'),
+                  label: Text(
+                    _toDate == null
+                        ? 'إلى تاريخ'
+                        : '${_toDate!.day}/${_toDate!.month}/${_toDate!.year}',
+                  ),
                 ),
               ),
             ],

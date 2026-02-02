@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultry_accounting/core/providers/database_providers.dart';
@@ -33,12 +35,14 @@ class _LiveChickenPricingScreenState extends ConsumerState<LiveChickenPricingScr
       setState(() {
         _chickenProductId = chicken.id;
       });
-      _loadPrice();
+      unawaited(_loadPrice());
     });
   }
 
   Future<void> _loadPrice() async {
-    if (_chickenProductId == null) return;
+    if (_chickenProductId == null) {
+      return;
+    }
     
     final repo = ref.read(priceRepositoryProvider);
     final prices = await repo.getPricesByDate(_selectedDate);
@@ -81,7 +85,7 @@ class _LiveChickenPricingScreenState extends ConsumerState<LiveChickenPricingScr
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),

@@ -1,15 +1,15 @@
 import 'package:drift/drift.dart';
 import 'package:poultry_accounting/core/constants/app_constants.dart';
 import 'package:poultry_accounting/data/database/database.dart' as db;
-import 'package:poultry_accounting/domain/entities/payment.dart' as domain;
 import 'package:poultry_accounting/domain/entities/customer.dart' as customer_domain;
+import 'package:poultry_accounting/domain/entities/payment.dart' as domain;
 import 'package:poultry_accounting/domain/entities/supplier.dart' as supplier_domain;
 import 'package:poultry_accounting/domain/repositories/payment_repository.dart';
 
 class PaymentRepositoryImpl implements PaymentRepository {
-  final db.AppDatabase database;
-
   PaymentRepositoryImpl(this.database);
+
+  final db.AppDatabase database;
 
   @override
   Future<List<domain.Payment>> getAllPayments({
@@ -22,11 +22,21 @@ class PaymentRepositoryImpl implements PaymentRepository {
     final query = database.select(database.payments)
       ..where((t) {
         Expression<bool> predicate = const Constant(true);
-        if (type != null) predicate = predicate & t.type.equals(type);
-        if (customerId != null) predicate = predicate & t.customerId.equals(customerId);
-        if (supplierId != null) predicate = predicate & t.supplierId.equals(supplierId);
-        if (fromDate != null) predicate = predicate & t.paymentDate.isBiggerOrEqualValue(fromDate);
-        if (toDate != null) predicate = predicate & t.paymentDate.isSmallerOrEqualValue(toDate);
+        if (type != null) {
+          predicate = predicate & t.type.equals(type);
+        }
+        if (customerId != null) {
+          predicate = predicate & t.customerId.equals(customerId);
+        }
+        if (supplierId != null) {
+          predicate = predicate & t.supplierId.equals(supplierId);
+        }
+        if (fromDate != null) {
+          predicate = predicate & t.paymentDate.isBiggerOrEqualValue(fromDate);
+        }
+        if (toDate != null) {
+          predicate = predicate & t.paymentDate.isSmallerOrEqualValue(toDate);
+        }
         predicate = predicate & t.deletedAt.isNull();
         return predicate;
       })
@@ -40,7 +50,9 @@ class PaymentRepositoryImpl implements PaymentRepository {
   Future<domain.Payment?> getPaymentById(int id) async {
     final query = database.select(database.payments)..where((t) => t.id.equals(id));
     final row = await query.getSingleOrNull();
-    if (row == null) return null;
+    if (row == null) {
+      return null;
+    }
     return _mapToEntity(row);
   }
 
@@ -48,7 +60,9 @@ class PaymentRepositoryImpl implements PaymentRepository {
   Future<domain.Payment?> getPaymentByNumber(String paymentNumber) async {
     final query = database.select(database.payments)..where((t) => t.paymentNumber.equals(paymentNumber));
     final row = await query.getSingleOrNull();
-    if (row == null) return null;
+    if (row == null) {
+      return null;
+    }
     return _mapToEntity(row);
   }
 
@@ -57,7 +71,7 @@ class PaymentRepositoryImpl implements PaymentRepository {
     return database.transaction(() async {
       // 1. Generate payment number if not provided
       final paymentNumber = payment.paymentNumber.isEmpty 
-          ? await generatePaymentNumber('receipt') 
+          ? await generatePaymentNumber() 
           : payment.paymentNumber;
 
       // 2. Insert payment
@@ -186,12 +200,16 @@ class PaymentRepositoryImpl implements PaymentRepository {
     final query = database.selectOnly(database.payments)..addColumns([amount]);
     
     query.where(
-      database.payments.type.equals('receipt') & 
-      database.payments.deletedAt.isNull()
+      database.payments.type.equals('receipt') &
+          database.payments.deletedAt.isNull(),
     );
     
-    if (fromDate != null) query.where(database.payments.paymentDate.isBiggerOrEqualValue(fromDate));
-    if (toDate != null) query.where(database.payments.paymentDate.isSmallerOrEqualValue(toDate));
+    if (fromDate != null) {
+      query.where(database.payments.paymentDate.isBiggerOrEqualValue(fromDate));
+    }
+    if (toDate != null) {
+      query.where(database.payments.paymentDate.isSmallerOrEqualValue(toDate));
+    }
     
     final result = await query.getSingle();
     return result.read(amount) ?? 0.0;
@@ -203,12 +221,16 @@ class PaymentRepositoryImpl implements PaymentRepository {
     final query = database.selectOnly(database.payments)..addColumns([amount]);
     
     query.where(
-      database.payments.type.equals('payment') & 
-      database.payments.deletedAt.isNull()
+      database.payments.type.equals('payment') &
+          database.payments.deletedAt.isNull(),
     );
     
-    if (fromDate != null) query.where(database.payments.paymentDate.isBiggerOrEqualValue(fromDate));
-    if (toDate != null) query.where(database.payments.paymentDate.isSmallerOrEqualValue(toDate));
+    if (fromDate != null) {
+      query.where(database.payments.paymentDate.isBiggerOrEqualValue(fromDate));
+    }
+    if (toDate != null) {
+      query.where(database.payments.paymentDate.isSmallerOrEqualValue(toDate));
+    }
     
     final result = await query.getSingle();
     return result.read(amount) ?? 0.0;
@@ -227,7 +249,9 @@ class PaymentRepositoryImpl implements PaymentRepository {
   Stream<List<domain.Payment>> watchAllPayments({String? type}) {
     final query = database.select(database.payments)
       ..where((t) {
-        if (type != null) return t.type.equals(type) & t.deletedAt.isNull();
+      if (type != null) {
+        return t.type.equals(type) & t.deletedAt.isNull();
+      }
         return t.deletedAt.isNull();
       })
       ..orderBy([(t) => OrderingTerm(expression: t.paymentDate, mode: OrderingMode.desc)]);

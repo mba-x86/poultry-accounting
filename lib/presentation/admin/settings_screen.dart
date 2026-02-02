@@ -1,12 +1,13 @@
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:poultry_accounting/core/providers/database_providers.dart';
-import 'package:poultry_accounting/core/providers/auth_provider.dart';
-import 'package:poultry_accounting/core/utils/security_utils.dart';
-import 'package:poultry_accounting/core/services/sms_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:poultry_accounting/core/providers/auth_provider.dart';
+import 'package:poultry_accounting/core/providers/database_providers.dart';
+import 'package:poultry_accounting/core/services/sms_service.dart';
 
 final smsServiceProvider = Provider((ref) => SmsService());
 
@@ -26,7 +27,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _otpController = TextEditingController();
+  // Removed unused _otpController
   final _userPhoneController = TextEditingController();
   
   bool _isLoading = false;
@@ -203,7 +204,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _changePassword() async {
     final user = ref.read(authProvider).user;
-    if (user == null) return;
+    if (user == null) {
+      return;
+    }
 
     if (_oldPasswordController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

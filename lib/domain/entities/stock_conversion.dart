@@ -2,13 +2,13 @@ import 'package:equatable/equatable.dart';
 
 class StockConversion extends Equatable {
   const StockConversion({
-    this.id,
     required this.conversionDate,
     required this.sourceProductId,
     required this.sourceQuantity,
+    required this.createdBy,
+    this.id,
     this.batchNumber,
     this.notes,
-    required this.createdBy,
     this.createdAt,
   });
 
@@ -36,12 +36,12 @@ class StockConversion extends Equatable {
 
 class StockConversionItem extends Equatable {
   const StockConversionItem({
-    this.id,
     required this.conversionId,
     required this.productId,
     required this.quantity,
     required this.yieldPercentage,
     required this.unitCost,
+    this.id,
   });
 
   final int? id;

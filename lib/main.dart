@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'package:poultry_accounting/core/providers/auth_provider.dart';
 import 'package:poultry_accounting/core/utils/session_timeout_listener.dart';
-import 'presentation/home/home_screen.dart';
+
 import 'presentation/auth/login_screen.dart';
+import 'presentation/home/home_screen.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -87,25 +89,25 @@ class _SplashScreenState extends State<SplashScreen> {
               color: Colors.green,
             ),
             SizedBox(height: 20),
-            const Text(
+            Text(
               '🐔 نظام محاسبة الدواجن',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 10),
-            const Text(
+            SizedBox(height: 10),
+            Text(
               'توزيع وتجارة الدجاج',
               style: TextStyle(
                 fontSize: 20,
                 color: Colors.grey,
               ),
             ),
-            const SizedBox(height: 20),
-            const CircularProgressIndicator(),
-            const SizedBox(height: 10),
-            const Text('جاري التحميل...'),
+            SizedBox(height: 20),
+            CircularProgressIndicator(),
+            SizedBox(height: 10),
+            Text('جاري التحميل...'),
           ],
         ),
       ),

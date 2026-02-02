@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:poultry_accounting/core/providers/database_providers.dart';
@@ -7,8 +9,12 @@ import 'package:poultry_accounting/domain/repositories/report_repository.dart';
 enum SupplierFilter { all, paid, unpaid }
 
 class SupplierStatementScreen extends ConsumerStatefulWidget {
+  const SupplierStatementScreen({
+    super.key,
+    this.supplier,
+  });
+
   final Supplier? supplier;
-  const SupplierStatementScreen({super.key, this.supplier});
 
   @override
   ConsumerState<SupplierStatementScreen> createState() => _SupplierStatementScreenState();
@@ -32,7 +38,9 @@ class _SupplierStatementScreenState extends ConsumerState<SupplierStatementScree
   }
 
   Future<void> _fetchStatement() async {
-    if (_selectedSupplier == null) return;
+    if (_selectedSupplier == null) {
+      return;
+    }
 
     setState(() => _isLoading = true);
     try {
@@ -56,14 +64,22 @@ class _SupplierStatementScreenState extends ConsumerState<SupplierStatementScree
   }
 
   List<SupplierStatementEntry> get _filteredEntries {
-    if (_filter == SupplierFilter.all) return _entries;
+    if (_filter == SupplierFilter.all) {
+      return _entries;
+    }
     return _entries.where((e) {
-      if (e.type != 'purchase') return true; // Keep payments and opening balances in view? 
+      if (e.type != 'purchase') {
+        return true; // Keep payments and opening balances in view
+      }
       // Actually, if filtering paid/unpaid, user probably wants to see specific invoices.
       // But a statement should be continuous. 
       // User said: "المشتريات المدفوعة" and "المشتريات غير المدفوعة"
-      if (_filter == SupplierFilter.paid) return e.isPaid;
-      if (_filter == SupplierFilter.unpaid) return !e.isPaid;
+      if (_filter == SupplierFilter.paid) {
+        return e.isPaid;
+      }
+      if (_filter == SupplierFilter.unpaid) {
+        return !e.isPaid;
+      }
       return true;
     }).toList();
   }
@@ -115,12 +131,12 @@ class _SupplierStatementScreenState extends ConsumerState<SupplierStatementScree
     return Card(
       elevation: 2,
       child: Padding(
-        padding: const EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8),
         child: Column(
           children: [
             Text(title, style: const TextStyle(fontSize: 10, color: Colors.grey)),
             Text(
-              '${value.toStringAsFixed(1)}',
+              value.toStringAsFixed(1),
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color),
             ),
           ],
@@ -136,7 +152,7 @@ class _SupplierStatementScreenState extends ConsumerState<SupplierStatementScree
         children: [
           ref.watch(suppliersStreamProvider).when(
                 data: (suppliers) => DropdownButtonFormField<Supplier>(
-                  value: _selectedSupplier,
+                  initialValue: _selectedSupplier,
                   decoration: const InputDecoration(
                     labelText: 'المورد',
                     border: OutlineInputBorder(),
@@ -145,11 +161,12 @@ class _SupplierStatementScreenState extends ConsumerState<SupplierStatementScree
                       .map((s) => DropdownMenuItem(
                             value: s,
                             child: Text(s.name),
-                          ))
+                          ),
+                        )
                       .toList(),
                   onChanged: (val) {
                     setState(() => _selectedSupplier = val);
-                    _fetchStatement();
+                    unawaited(_fetchStatement());
                   },
                 ),
                 loading: () => const LinearProgressIndicator(),
@@ -179,13 +196,15 @@ class _SupplierStatementScreenState extends ConsumerState<SupplierStatementScree
                     );
                     if (date != null) {
                       setState(() => _fromDate = date);
-                      _fetchStatement();
+                      await _fetchStatement();
                     }
                   },
                   icon: const Icon(Icons.date_range, size: 16),
-                  label: Text(_fromDate == null
-                      ? 'من تاريخ'
-                      : '${_fromDate!.day}/${_fromDate!.month}/${_fromDate!.year}'),
+                  label: Text(
+                    _fromDate == null
+                        ? 'من تاريخ'
+                        : '${_fromDate!.day}/${_fromDate!.month}/${_fromDate!.year}',
+                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -200,13 +219,15 @@ class _SupplierStatementScreenState extends ConsumerState<SupplierStatementScree
                     );
                     if (date != null) {
                       setState(() => _toDate = date);
-                      _fetchStatement();
+                      await _fetchStatement();
                     }
                   },
                   icon: const Icon(Icons.date_range, size: 16),
-                  label: Text(_toDate == null
-                      ? 'إلى تاريخ'
-                      : '${_toDate!.day}/${_toDate!.month}/${_toDate!.year}'),
+                  label: Text(
+                    _toDate == null
+                        ? 'إلى تاريخ'
+                        : '${_toDate!.day}/${_toDate!.month}/${_toDate!.year}',
+                  ),
                 ),
               ),
             ],
